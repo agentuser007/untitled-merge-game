@@ -63,8 +63,9 @@ class AdSystem {
         });
         this._popupWatchBtn.addEventListener('click', function() {
             if (self._currentPopupType) {
+                var type = self._currentPopupType;
                 self._closePopup();
-                self.watchAd(self._currentPopupType);
+                self.watchAd(type);
             }
         });
     }
@@ -236,10 +237,10 @@ class AdSystem {
         var rem = this.getRemaining('energy');
         if (rem <= 0) {
             btn.disabled = true; btn.classList.add('reward-btn-disabled');
-            btn.innerHTML = '<span class="reward-btn-icon">🎬</span> <span class="reward-btn-text">' + I18n.t('ad.limitReached') + '</span>';
+            btn.innerHTML = '🎬';
         } else {
             btn.disabled = false; btn.classList.remove('reward-btn-disabled');
-            btn.innerHTML = '<span class="reward-btn-icon">🎬</span> <span class="reward-btn-text">' + I18n.t('ad.energyBtn', { count: AD_CONFIG.energy.reward, remaining: rem }) + '</span>';
+            btn.innerHTML = '🎬';
         }
     }
 
