@@ -119,6 +119,8 @@
     "empty": "Your backpack is empty",
     "emptyHint": "Try the gacha machine for items!",
     "boardFullUse": "❌ Board is full, can't use this item!",
+    "dragOutside": "Please drag the item into a board grid!",
+    "cellOccupied": "That cell is already occupied or locked!",
     "boardFullPlace": "❌ Board is full, can't place!",
     "boardFullSSR": "❌ Board is full, can't place SSR generator!",
     "boardFullJoker": "❌ Board is full, can't place Joker",

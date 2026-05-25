@@ -119,6 +119,8 @@
     "empty": "背包空空如也",
     "emptyHint": "去扭蛋机试试手气吧！",
     "boardFullUse": "❌ 棋盘已满，无法使用此道具！",
+    "dragOutside": "请将物品拖拽到棋盘格子内！",
+    "cellOccupied": "该格子已占用或已锁定！",
     "boardFullPlace": "❌ 棋盘已满，无法放置！",
     "boardFullSSR": "❌ 棋盘已满，无法放置SSR生成器！",
     "boardFullJoker": "❌ 棋盘已满，无法放置百搭牌",

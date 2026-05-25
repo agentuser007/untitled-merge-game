@@ -689,6 +689,19 @@ class Game {
                 }
             });
         });
+
+        // Click outside inventory sheet closes it
+        document.addEventListener('pointerdown', (e) => {
+            const inventorySheet = document.getElementById('inventory-sheet');
+            const backpackBtn = document.getElementById('backpack-btn');
+            if (inventorySheet && inventorySheet.classList.contains('open')) {
+                if (!inventorySheet.contains(e.target) && !backpackBtn.contains(e.target)) {
+                    if (this.inventory) {
+                        this.inventory.closeSheet();
+                    }
+                }
+            }
+        });
     }
 
     // ---- Click Sound for Interactive Elements ----

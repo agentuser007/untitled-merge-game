@@ -141,20 +141,23 @@
           <!-- Quest row containing the scrollable carousel -->
           <div class="quest-row">
             <div id="quest-carousel">
+              <!-- Prominent Backpack Button adjacent to grid top-left -->
+              <div class="quest-carousel-backpack-container">
+                <button
+                  class="quest-carousel-backpack"
+                  id="backpack-btn"
+                  data-tab="inventory"
+                  title="背包"
+                >
+                  <i data-lucide="package"></i>
+                  <span id="inventory-badge" class="backpack-badge" style="display: none;">0</span>
+                </button>
+              </div>
               <!-- Main Quest Card (Milo / Boss Card) -->
               <div id="main-quest-card" class="quest-card">
                 <!-- Boss portrait at the top of the card -->
                 <div id="boss-portrait">
                   <div id="boss-blush"></div>
-                  <!-- Backpack button attached to portrait lower-left -->
-                  <button
-                    class="quest-carousel-backpack portrait-attached"
-                    id="backpack-btn"
-                    data-tab="inventory"
-                    title="背包"
-                  >
-                    <i data-lucide="package"></i>
-                  </button>
                 </div>
                 <!-- Quest card body below the portrait -->
                 <div class="quest-card-body">
@@ -226,29 +229,14 @@
         </div>
       </div>
 
-      <!-- ===== BOTTOM NAVIGATION (hidden — replaced by side buttons) ===== -->
-      <nav id="bottom-nav" style="display: none">
-        <button class="nav-item" data-tab="inventory">
-          <span class="nav-icon"><i data-lucide="backpack"></i></span>
-          <span class="nav-label" data-i18n="nav.inventory">背包</span>
-        </button>
-        <button class="nav-item" data-tab="heroine">
-          <span class="nav-icon"><i data-lucide="crown"></i></span>
-          <span class="nav-label" data-i18n="nav.heroine">养成</span>
-        </button>
-        <button class="nav-item" data-tab="gacha">
-          <span class="nav-icon"><i data-lucide="gift"></i></span>
-          <span class="nav-label" data-i18n="nav.gacha">扭蛋</span>
-        </button>
-        <button class="nav-item" data-tab="collection">
-          <span class="nav-icon"><i data-lucide="book-open"></i></span>
-          <span class="nav-label" data-i18n="nav.collection">图鉴</span>
-        </button>
-        <button class="nav-item" data-tab="achievement">
-          <span class="nav-icon"><i data-lucide="trophy"></i></span>
-          <span class="nav-label" data-i18n="nav.achievement">成就</span>
-        </button>
       </nav>
+
+      <!-- ===== INVENTORY / BACKPACK SUSPENDED PANEL ===== -->
+      <div class="bottom-sheet" id="inventory-sheet">
+        <div id="inventory-list" class="sheet-body">
+          <!-- filled by JS grid slots -->
+        </div>
+      </div>
     </div>
 
     <!-- ===== DIALOGUE OVERLAY ===== -->
@@ -493,7 +481,9 @@
                 <div class="gacha-rhombus-text">单抽</div>
               </button>
               <div class="gacha-cost-pill">
-                <i data-lucide="gem" class="gacha-gem-icon"></i>
+                <svg class="gacha-gem-icon" viewBox="0 0 24 24" fill="#E8C89F" stroke="#FFF" stroke-width="2">
+                  <path d="M12 2L2 12l10 10 10-10L12 2z"/>
+                </svg>
                 <span id="gacha-single-cost">x100</span>
               </div>
             </div>
@@ -504,7 +494,9 @@
                 <div class="gacha-rhombus-text">十连抽</div>
               </button>
               <div class="gacha-cost-pill">
-                <i data-lucide="gem" class="gacha-gem-icon"></i>
+                <svg class="gacha-gem-icon" viewBox="0 0 24 24" fill="#E8C89F" stroke="#FFF" stroke-width="2">
+                  <path d="M12 2L2 12l10 10 10-10L12 2z"/>
+                </svg>
                 <span id="gacha-ten-cost">x900</span>
               </div>
             </div>
@@ -569,23 +561,7 @@
       </div>
     </div>
 
-    <!-- ===== INVENTORY / BACKPACK BOTTOM SHEET ===== -->
-    <div class="bottom-sheet" id="inventory-sheet">
-      <div class="sheet-drag-handle"></div>
-      <div class="sheet-header">
-        <div class="sheet-header-left">
-          <i data-lucide="backpack" class="sheet-header-icon"></i>
-          <span data-i18n="inventory.panelTitle"></span>
-        </div>
-        <button class="sheet-close" data-close="inventory-sheet">✕</button>
-      </div>
-      <div class="sheet-sub" data-i18n="inventory.panelSub">
-        点击「使用」来应用道具效果
-      </div>
-      <div id="inventory-list" class="sheet-body">
-        <!-- filled by JS -->
-      </div>
-    </div>
+
 
     <!-- ===== CG ALBUM BOTTOM SHEET ===== -->
     <div class="bottom-sheet" id="cg-album-sheet">

@@ -110,64 +110,208 @@ class InventorySystem {
         if (!this.listEl) return;
         this.listEl.innerHTML = '';
 
-        // FB-7: Capacity bar + unlock button at top
-        const total = this.getTotalCount();
-        const capBar = document.createElement('div');
-        capBar.className = 'inventory-capacity-bar';
-        const pct = Math.min(100, Math.round((total / this.maxSlots) * 100));
-        const pctClass = pct >= 90 ? 'capacity-critical' : (pct >= 70 ? 'capacity-warning' : '');
-        capBar.innerHTML = `
-            <div class="capacity-info">
-                <span class="capacity-text">${I18n.t('inventory.capacity', {current: total, max: this.maxSlots})}</span>
-                ${this.canUnlockMore() ? `<button class="unlock-slot-btn" type="button">💎 ${I18n.t('inventory.unlockSlots', {count: INVENTORY_SLOT_CONFIG.slotsPerUnlock, cost: this.getUnlockCost()})}</button>` : ''}
-            </div>
-            <div class="capacity-track ${pctClass}"><div class="capacity-fill" style="width:${pct}%"></div></div>
-        `;
-        this.listEl.appendChild(capBar);
+        const itemIds = Object.keys(this.items).filter(id => this.items[id] > 0);
+        const uniqueItemsCount = itemIds.length;
 
-        // Bind unlock button
-        const unlockBtn = capBar.querySelector('.unlock-slot-btn');
-        if (unlockBtn) {
-            unlockBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.unlockSlot();
-            });
-        }
-
-        const itemIds = Object.keys(this.items);
-        if (itemIds.length === 0) {
-            const emptyEl = document.createElement('div');
-            emptyEl.className = 'inventory-empty';
-            emptyEl.innerHTML = I18n.emoji('backpack') + ' ' + I18n.t('inventory.empty') + '<br>' + I18n.t('inventory.emptyHint');
-            this.listEl.appendChild(emptyEl);
-            return;
-        }
-        for (const id of itemIds) {
+        // 1. Render actual items
+        for (let i = 0; i < uniqueItemsCount; i++) {
+            const id = itemIds[i];
             const count = this.items[id];
             const poolItem = this.findPoolItem(id);
             if (!poolItem) continue;
+
             const card = document.createElement('div');
             const rarity = poolItem.rarity || 'R';
             card.className = 'inventory-card rarity-' + rarity.toLowerCase();
-            const info = document.createElement('div');
-            info.className = 'inventory-card-info';
-            const desc = poolItem.description || this.getEffectDescription(poolItem);
-            info.innerHTML = '<span class="inventory-icon">' + poolItem.icon + '</span>' +
-                '<div class="inventory-text">' +
-                '<div class="inventory-name">' + poolItem.name + ' ×' + count + '</div>' +
-                '<div class="inventory-desc">' + desc + '</div>' +
-                '</div>';
-            const btn = document.createElement('button');
-            btn.className = 'inventory-use-btn';
-            btn.textContent = I18n.t('inventory.use');
-            btn.addEventListener('click', function(e) {
+            card.dataset.itemId = id;
+
+            // Select state restoration
+            if (this._selectedItemId === id) {
+                card.classList.add('selected');
+            }
+
+            const iconEl = document.createElement('span');
+            iconEl.className = 'inventory-icon';
+            iconEl.textContent = poolItem.icon;
+            card.appendChild(iconEl);
+
+            if (count > 1) {
+                const countBadge = document.createElement('span');
+                countBadge.className = 'inventory-count-badge';
+                countBadge.textContent = '×' + count;
+                card.appendChild(countBadge);
+            }
+
+            // Click to select/view info
+            card.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.useItem(id);
-            }.bind(this));
-            card.appendChild(info);
-            card.appendChild(btn);
+                this.selectItem(id, card);
+            });
+
+            // Pointer down for drag & drop
+            card.addEventListener('pointerdown', (e) => {
+                this.onPointerDown(e, id);
+            });
+
             this.listEl.appendChild(card);
         }
+
+        // 2. Render empty slots to reach this.maxSlots
+        const emptySlotsCount = Math.max(0, this.maxSlots - uniqueItemsCount);
+        for (let i = 0; i < emptySlotsCount; i++) {
+            const emptyCard = document.createElement('div');
+            emptyCard.className = 'inventory-card empty-slot';
+            this.listEl.appendChild(emptyCard);
+        }
+
+        // 3. Render locked slots up to Max Config (50 slots)
+        if (this.maxSlots < INVENTORY_SLOT_CONFIG.maxSlots) {
+            const lockedSlotsCount = INVENTORY_SLOT_CONFIG.maxSlots - this.maxSlots;
+            for (let i = 0; i < lockedSlotsCount; i++) {
+                const lockedCard = document.createElement('div');
+                lockedCard.className = 'inventory-card locked-slot';
+                lockedCard.textContent = '🔒';
+                
+                // Clicking a locked slot triggers slot expansion confirmation!
+                lockedCard.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.unlockSlot();
+                });
+                this.listEl.appendChild(lockedCard);
+            }
+        }
+    }
+
+    selectItem(id, cardEl) {
+        this._selectedItemId = id;
+        document.querySelectorAll('.inventory-card').forEach(c => c.classList.remove('selected'));
+        if (cardEl) cardEl.classList.add('selected');
+        
+        const poolItem = this.findPoolItem(id);
+        if (poolItem) {
+            this.showInventoryItemInfo(poolItem);
+        }
+    }
+
+    showInventoryItemInfo(poolItem) {
+        const infoTextEl = document.getElementById('item-info-text');
+        const sellBtnEl = document.getElementById('item-sell-btn');
+        const infoBarEl = document.getElementById('item-info-bar');
+        
+        if (infoTextEl) {
+            const desc = poolItem.description || this.getEffectDescription(poolItem);
+            infoTextEl.textContent = `${poolItem.icon} ${poolItem.name} — ${desc}`;
+            infoTextEl.removeAttribute('data-i18n');
+        }
+        if (sellBtnEl) {
+            sellBtnEl.style.display = 'none';
+        }
+        if (infoBarEl) {
+            infoBarEl.classList.add('has-item');
+        }
+        
+        // Clear board selection highlight
+        document.querySelectorAll('.grid-cell.cell-highlight').forEach(c => c.classList.remove('cell-highlight'));
+        if (this.game.board) {
+            this.game.board._selectedCellIndex = null;
+        }
+    }
+
+    // Pointer events — Drag & drop from backpack panel to board
+    onPointerDown(e, id) {
+        e.preventDefault();
+        e.stopPropagation(); // Prevent bubbling up to document and triggering sheet close
+        const sx = e.clientX;
+        const sy = e.clientY;
+        let lastX = sx;
+        let lastY = sy;
+        let isDragging = false;
+        let dragGhost = null;
+
+        const onMove = (ev) => {
+            // Cache coordinates as robust touch fallback
+            if (ev.clientX !== undefined && ev.clientX !== 0) lastX = ev.clientX;
+            if (ev.clientY !== undefined && ev.clientY !== 0) lastY = ev.clientY;
+
+            if (!isDragging) {
+                if (Math.abs(ev.clientX - sx) > 8 || Math.abs(ev.clientY - sy) > 8) {
+                    isDragging = true;
+                    document.body.classList.add('inventory-dragging');
+                    const poolItem = this.findPoolItem(id);
+                    if (poolItem) {
+                        dragGhost = document.createElement('div');
+                        dragGhost.className = 'inventory-drag-ghost';
+                        dragGhost.textContent = poolItem.icon;
+                        dragGhost.style.left = ev.clientX + 'px';
+                        dragGhost.style.top = ev.clientY + 'px';
+                        document.body.appendChild(dragGhost);
+                        
+                        // Select on drag start
+                        const cardEl = document.querySelector(`.inventory-card[data-item-id="${id}"]`);
+                        this.selectItem(id, cardEl);
+                    }
+                }
+            }
+
+            if (isDragging && dragGhost) {
+                dragGhost.style.left = ev.clientX + 'px';
+                dragGhost.style.top = ev.clientY + 'px';
+
+                const t = document.elementFromPoint(ev.clientX, ev.clientY);
+                document.querySelectorAll('.grid-cell.drop-target').forEach(c => c.classList.remove('drop-target'));
+                
+                if (t) {
+                    const gc = t.closest('.grid-cell');
+                    if (gc) {
+                        gc.classList.add('drop-target');
+                    }
+                }
+            }
+        };
+
+        const onUp = (ev) => {
+            document.removeEventListener('pointermove', onMove);
+            document.removeEventListener('pointerup', onUp);
+
+            // Compute accurate coordinate with lastX/lastY fallback
+            const upX = (ev.clientX !== undefined && ev.clientX !== 0) ? ev.clientX : lastX;
+            const upY = (ev.clientY !== undefined && ev.clientY !== 0) ? ev.clientY : lastY;
+
+            if (isDragging) {
+                if (dragGhost) {
+                    dragGhost.remove();
+                    dragGhost = null;
+                }
+                document.querySelectorAll('.grid-cell.drop-target').forEach(c => c.classList.remove('drop-target'));
+
+                const t = document.elementFromPoint(upX, upY);
+                document.body.classList.remove('inventory-dragging');
+                
+                let cellFound = false;
+                if (t) {
+                    const gc = t.closest('.grid-cell');
+                    if (gc) {
+                        const targetCellIndex = parseInt(gc.dataset.index);
+                        this.useItem(id, targetCellIndex);
+                        cellFound = true;
+                    }
+                }
+                if (!cellFound) {
+                    const dragOutsideText = (I18n.t('inventory.dragOutside') && I18n.t('inventory.dragOutside') !== 'inventory.dragOutside')
+                        ? I18n.t('inventory.dragOutside')
+                        : '请将物品拖拽到棋盘格子内！';
+                    this.showUseToast(dragOutsideText);
+                }
+            } else {
+                // If it is just a click/touch tap, select the item and show details!
+                const cardEl = document.querySelector(`.inventory-card[data-item-id="${id}"]`);
+                this.selectItem(id, cardEl);
+            }
+            isDragging = false;
+        };
+
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp);
     }
 
     getEffectDescription(poolItem) {
@@ -195,28 +339,33 @@ class InventorySystem {
         }
     }
 
-    useItem(id) {
+    useItem(id, targetCellIndex = null) {
         const poolItem = this.findPoolItem(id);
         if (!poolItem) return;
-        if (this._needsBoardSpace(poolItem.effect)) {
+
+        // Space validation for placeable items only when not dragging to a specific grid cell
+        if (targetCellIndex === null && this._needsBoardSpace(poolItem.effect)) {
             if (!this.game.board.hasEmptySpace()) {
-                this.showUseToast(I18n.t('inventory.boardFullUse'));
+                this.showUseToast(I18n.t('inventory.boardFullUse') || '棋盘已满，无法放置！');
                 return;
             }
         }
+
+        // Try removing the item, if effect execution fails we refund it
         if (!this.removeItem(id)) return;
+
         let used = true;
         switch (poolItem.effect) {
             case 'add_fragment': used = this.effectAddFragment(poolItem.value); break;
             case 'add_fragment_lucky': used = this.effectAddFragmentLucky(poolItem.value); break;
             case 'add_energy_item': used = this.effectAddEnergy(poolItem.value); break;
-            case 'spawn_board_item': used = this.effectSpawnBoardItem(poolItem.value); break;
-            case 'place_generator': used = this.effectPlaceGenerator(poolItem.value); break;
-            case 'ssr_generator': used = this.effectSSRGenerator(poolItem.value); break;
-            case 'add_joker': used = this.effectPlaceJoker(); break;
-            case 'add_scissor': used = this.effectScissorMode(id); break;
+            case 'spawn_board_item': used = this.effectSpawnBoardItem(poolItem.value, targetCellIndex); break;
+            case 'place_generator': used = this.effectPlaceGenerator(poolItem.value, targetCellIndex); break;
+            case 'ssr_generator': used = this.effectSSRGenerator(poolItem.value, targetCellIndex); break;
+            case 'add_joker': used = this.effectPlaceJoker(targetCellIndex); break;
+            case 'add_scissor': used = this.effectScissorMode(id, targetCellIndex); break;
             case 'clear_lv1': used = this.effectClearLv1(); break;
-            case 'spawn_item': used = this.effectSpawnItem(poolItem.value); break;
+            case 'spawn_item': used = this.effectSpawnItem(poolItem.value, targetCellIndex); break;
             case 'time_freeze': used = this.effectTimeFreeze(poolItem.value); break;
             case 'lucky_coin': used = this.effectLuckyCoin(poolItem.value); break;
             case 'double_gen': used = this.effectDoubleGen(poolItem.value); break;
@@ -225,13 +374,48 @@ class InventorySystem {
             case 'add_diamond': used = this.effectAddDiamond(poolItem.value); break;
             case 'add_gold': used = this.effectAddGold(poolItem.value); break;
             case 'space_clean': used = this.effectSpaceClean(); break;
-            case 'upgrade_item': used = this.effectUpgradeItem(poolItem.id); break;
+            case 'upgrade_item': used = this.effectUpgradeItem(id, targetCellIndex); break;
             default: this.showUseToast(I18n.t('inventory.usedItem', {name: poolItem.name}));
         }
-        if (!used) { this.refundItem(id); }
+
+        if (!used) {
+            this.refundItem(id);
+        }
+
         this.renderItems();
         if (used && this.panelEl) Effects.spawnParticles(this.panelEl, 6, '✨');
+
+        // Refresh board quest completion highlights
+        if (used) {
+            this.game.checkOrderCompletion();
+            if (this.game.dailyOrders) this.game.dailyOrders.updateHighlights();
+        }
+
         if (this.game.save) this.game.save.saveAll();
+    }
+
+    updateBadge() {
+        const total = this.getTotalCount();
+        if (this.badgeEl) {
+            this.badgeEl.textContent = total;
+            this.badgeEl.style.display = total > 0 ? 'flex' : 'none';
+        }
+
+        const backpackBtn = document.getElementById('backpack-btn');
+        if (backpackBtn) {
+            const itemIds = Object.keys(this.items).filter(id => this.items[id] > 0);
+            if (itemIds.length > 0) {
+                const firstPoolItem = this.findPoolItem(itemIds[0]);
+                if (firstPoolItem) {
+                    backpackBtn.innerHTML = `<span class="backpack-item-icon">${firstPoolItem.icon}</span>` +
+                        `<span id="inventory-badge" class="backpack-badge">${total}</span>`;
+                }
+            } else {
+                backpackBtn.innerHTML = `<span class="backpack-item-icon">📦</span>` +
+                    `<span id="inventory-badge" class="backpack-badge" style="display: none;">0</span>`;
+            }
+            this.badgeEl = document.getElementById('inventory-badge');
+        }
     }
 
     _needsBoardSpace(effect) {
@@ -270,12 +454,22 @@ class InventorySystem {
         return true;
     }
 
-    effectSpawnBoardItem(value) {
+    effectSpawnBoardItem(value, targetCellIndex = null) {
         const board = this.game.board;
-        if (!board.hasEmptySpace()) {
-            this.showUseToast(I18n.t('inventory.boardFullPlace'));
-            return false;
+        let spawnIdx = targetCellIndex;
+        if (spawnIdx !== null) {
+            if (board.locked.has(spawnIdx) || board.cells[spawnIdx]) {
+                this.showUseToast(I18n.t('inventory.cellOccupied') || '该格子已占用或已锁定！');
+                return false;
+            }
+        } else {
+            spawnIdx = board.findEmptyCell();
+            if (spawnIdx === -1) {
+                this.showUseToast(I18n.t('inventory.boardFullPlace') || '棋盘已满！');
+                return false;
+            }
         }
+
         let chain = value.chain, level = value.level;
         if (chain === 'random') chain = CHAINS[Math.floor(Math.random() * CHAINS.length)];
         if (typeof level === 'string') {
@@ -288,40 +482,68 @@ class InventorySystem {
         const prefix = CHAIN_ITEM_PREFIX[chain];
         if (!prefix) return false;
         const itemId = prefix + '_' + level;
-        board.spawnItemById(itemId);
+
+        board.logic.setCell(spawnIdx, itemId);
+        board.logic.initGeneratorState(spawnIdx, itemId);
+        board.renderCell(spawnIdx);
+        Effects.spawnPop(board.getCellEl(spawnIdx));
+
         this.showUseToast(I18n.t('inventory.gotItem', {name: ITEMS[itemId] ? ITEMS[itemId].name : itemId}));
-        this.closeSheet();
         return true;
     }
 
-    effectPlaceGenerator(value) {
+    effectPlaceGenerator(value, targetCellIndex = null) {
         const board = this.game.board;
-        if (!board.hasEmptySpace()) {
-            this.showUseToast(I18n.t('inventory.boardFullPlace'));
-            return false;
+        let spawnIdx = targetCellIndex;
+        if (spawnIdx !== null) {
+            if (board.locked.has(spawnIdx) || board.cells[spawnIdx]) {
+                this.showUseToast(I18n.t('inventory.cellOccupied') || '该格子已占用或已锁定！');
+                return false;
+            }
+        } else {
+            spawnIdx = board.findEmptyCell();
+            if (spawnIdx === -1) {
+                this.showUseToast(I18n.t('inventory.boardFullPlace') || '棋盘已满！');
+                return false;
+            }
         }
+
         const genId = value.genChain + '_' + value.level;
         if (ITEMS[genId]) {
-            board.spawnItemById(genId);
+            board.logic.setCell(spawnIdx, genId);
+            board.logic.initGeneratorState(spawnIdx, genId);
+            board.renderCell(spawnIdx);
+            Effects.spawnPop(board.getCellEl(spawnIdx));
             this.showUseToast(I18n.t('inventory.gotGenerator', {name: ITEMS[genId].name}));
-            this.closeSheet();
             return true;
         }
         this.showUseToast(I18n.t('inventory.generatorError'));
         return false;
     }
 
-    effectSSRGenerator(value) {
+    effectSSRGenerator(value, targetCellIndex = null) {
         const board = this.game.board;
-        if (!board.hasEmptySpace()) {
-            this.showUseToast(I18n.t('inventory.boardFullSSR'));
-            return false;
+        let spawnIdx = targetCellIndex;
+        if (spawnIdx !== null) {
+            if (board.locked.has(spawnIdx) || board.cells[spawnIdx]) {
+                this.showUseToast(I18n.t('inventory.cellOccupied') || '该格子已占用或已锁定！');
+                return false;
+            }
+        } else {
+            spawnIdx = board.findEmptyCell();
+            if (spawnIdx === -1) {
+                this.showUseToast(I18n.t('inventory.boardFullSSR') || '棋盘已满！');
+                return false;
+            }
         }
+
         const genId = value.genChain + '_' + value.level;
         if (ITEMS[genId]) {
-            board.spawnItemById(genId);
+            board.logic.setCell(spawnIdx, genId);
+            board.logic.initGeneratorState(spawnIdx, genId);
+            board.renderCell(spawnIdx);
+            Effects.spawnPop(board.getCellEl(spawnIdx));
             this.showUseToast(I18n.t('inventory.ssrPlaced', {name: ITEMS[genId].name}));
-            this.closeSheet();
             return true;
         }
         this.showUseToast(I18n.t('inventory.ssrGeneratorError'));
@@ -353,19 +575,34 @@ class InventorySystem {
         return true;
     }
 
-    effectSpawnItem(level) {
-        if (!this.game.board.hasEmptySpace()) {
-            this.showUseToast(I18n.t('inventory.boardFullUse2'));
-            return false;
+    effectSpawnItem(level, targetCellIndex = null) {
+        const board = this.game.board;
+        let spawnIdx = targetCellIndex;
+        if (spawnIdx !== null) {
+            if (board.locked.has(spawnIdx) || board.cells[spawnIdx]) {
+                this.showUseToast(I18n.t('inventory.cellOccupied') || '该格子已占用或已锁定！');
+                return false;
+            }
+        } else {
+            spawnIdx = board.findEmptyCell();
+            if (spawnIdx === -1) {
+                this.showUseToast(I18n.t('inventory.boardFullUse2') || '棋盘已满！');
+                return false;
+            }
         }
+
         const candidates = Object.entries(ITEMS).filter(function(e) { return e[1].level === level; });
         if (candidates.length === 0) return false;
         const entry = candidates[Math.floor(Math.random() * candidates.length)];
         const itemId = entry[0];
-        this.game.board.spawnItem(itemId);
+
+        board.logic.setCell(spawnIdx, itemId);
+        board.logic.initGeneratorState(spawnIdx, itemId);
+        board.renderCell(spawnIdx);
+        Effects.spawnPop(board.getCellEl(spawnIdx));
+
         const itemData = ITEMS[itemId];
         this.showUseToast(I18n.t('inventory.gotSpawnItem', {emoji: itemData.emoji, name: itemData.name}));
-        this.closeSheet();
         return true;
     }
 
@@ -425,7 +662,6 @@ class InventorySystem {
         }
         if (rerolled > 0) {
             this.showUseToast(I18n.t('inventory.rerolled', {count: rerolled}));
-            this.closeSheet();
             if (this.game.dailyOrders) this.game.dailyOrders.updateHighlights();
         } else {
             this.showUseToast(I18n.t('inventory.noRerollItems'));
@@ -496,8 +732,39 @@ class InventorySystem {
         return true;
     }
 
-    effectUpgradeItem(itemId) {
+    effectUpgradeItem(itemId, targetCellIndex = null) {
         const board = this.game.board;
+        
+        // If a target cell index is provided (e.g. from drag & drop), immediately try to upgrade that item!
+        if (targetCellIndex !== null) {
+            const cellItemId = board.cells[targetCellIndex];
+            if (!cellItemId) {
+                this.showUseToast(I18n.t('inventory.itemNotUpgradable') || '该位置为空，无法升级！');
+                return false;
+            }
+            const itemData = ITEMS[cellItemId];
+            if (!itemData || !itemData.nextId || itemData.type === 'GENERATOR' || itemData.type === 'JOKER' || itemData.type === 'SCISSOR') {
+                this.showUseToast(I18n.t('inventory.itemNotUpgradable') || '此物品无法升级！');
+                return false;
+            }
+            const nextItem = ITEMS[itemData.nextId];
+            if (nextItem) {
+                board.logic.setCell(targetCellIndex, itemData.nextId);
+                board.renderCell(targetCellIndex);
+                Effects.mergePopAt(board.getCellEl(targetCellIndex));
+                this.showUseToast(I18n.t('inventory.upgradeSuccess', {oldName: itemData.name, newName: nextItem.name}));
+                if (this.game.collection) this.game.collection.discoverItem(itemData.nextId);
+                if (this.game.dailyOrders) this.game.dailyOrders.updateHighlights();
+                this.closeSheet();
+                if (this.game.save) this.game.save.saveAll();
+                return true;
+            } else {
+                this.showUseToast(I18n.t('inventory.maxLevelReached') || '已达最高等级！');
+                return false;
+            }
+        }
+
+        // Always trigger interactive upgrade mode to let players choose precisely!
         let hasUpgradable = false;
         for (let i = 0; i < board.cells.length; i++) {
             if (board.cells[i]) {
@@ -560,20 +827,59 @@ class InventorySystem {
         return true;
     }
 
-    effectPlaceJoker() {
+    effectPlaceJoker(targetCellIndex = null) {
         const board = this.game.board;
-        if (!board.hasEmptySpace()) {
-            this.showUseToast(I18n.t('inventory.boardFullJoker'));
-            return false;
+        let spawnIdx = targetCellIndex;
+        if (spawnIdx !== null) {
+            if (board.locked.has(spawnIdx) || board.cells[spawnIdx]) {
+                this.showUseToast(I18n.t('inventory.cellOccupied') || '该格子已占用或已锁定！');
+                return false;
+            }
+        } else {
+            spawnIdx = board.findEmptyCell();
+            if (spawnIdx === -1) {
+                this.showUseToast(I18n.t('inventory.boardFullJoker'));
+                return false;
+            }
         }
-        board.spawnItem('joker');
+        board.logic.setCell(spawnIdx, 'joker');
+        board.logic.initGeneratorState(spawnIdx, 'joker');
+        board.renderCell(spawnIdx);
+        Effects.spawnPop(board.getCellEl(spawnIdx));
         this.showUseToast(I18n.t('inventory.jokerPlaced'));
-        this.closeSheet();
         return true;
     }
 
-    effectScissorMode(itemId) {
+    effectScissorMode(itemId, targetCellIndex = null) {
         const board = this.game.board;
+        
+        // If a target cell index is provided (e.g. from drag & drop), immediately try to split that item!
+        if (targetCellIndex !== null) {
+            const result = board.logic.useScissorOnItem(targetCellIndex);
+            if (result.success) {
+                board.renderCell(result.targetIdx);
+                board.renderCell(result.emptyIdx);
+                Effects.mergePopAt(board.getCellEl(result.targetIdx));
+                const prevData = ITEMS[result.resultItems[0]];
+                this.showUseToast(I18n.t('inventory.scissorSuccess', {name: prevData ? prevData.name : ''}));
+                if (this.game.collection) this.game.collection.discoverItem(result.resultItems[0]);
+                if (this.game.dailyOrders) this.game.dailyOrders.updateHighlights();
+                this.closeSheet();
+                if (this.game.save) this.game.save.saveAll();
+                return true;
+            } else {
+                const reasons = {
+                    'empty': I18n.t('inventory.scissorFailEmpty'),
+                    'too_low': I18n.t('inventory.scissorFailTooLow'),
+                    'invalid_type': I18n.t('inventory.scissorFailInvalidType'),
+                    'no_space': I18n.t('inventory.scissorFailNoSpace')
+                };
+                this.showUseToast('✂️ ' + (reasons[result.reason] || I18n.t('inventory.scissorFailDefault') || '无法拆分！'));
+                return false;
+            }
+        }
+
+        // Always trigger interactive scissor selection mode to let players choose precisely!
         board.logic.scissorMode = true;
         this.showUseToast(I18n.t('inventory.scissorHint'));
         this.closeSheet();
