@@ -4,8 +4,7 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { GachaLogic, GachaItem as LogicGachaItem, GachaConfig } from '../logic/GachaLogic';
-import { ItemEffectLogic } from '../logic/ItemEffectLogic';
+import { GachaLogic, GachaItem as LogicGachaItem } from '../logic/GachaLogic';
 import { useConfigStore } from './configStore';
 import { useBoardStore } from './boardStore';
 import { useCurrencyStore } from './currencyStore';

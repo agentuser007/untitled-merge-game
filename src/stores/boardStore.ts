@@ -17,12 +17,11 @@ import { useDailyOrderStore, type DailyOrderState } from './dailyOrderStore';
 import { BoardService } from '../services/BoardService';
 import type { ResolveResult } from '../services/ServiceResultTypes';
 
-import { useInventoryStore } from './inventoryStore';
+
 import { OfflineProductionManager } from '../features/OfflineProductionManager';
 import type { BoardSnapshot, MapNode, LoopStatus } from '../types/game';
 export type { BoardSnapshot, MapNode, LoopStatus };
 
-const MAX_OFFLINE_PRODUCES_PER_GENERATOR = 20; // Kept for reference; actual cap now in DefaultOfflineProduction
 
 // Helper function to convert config item data to board logic item data
 function convertItemData(configItems: Record<string, GameItem>): Record<string, BoardItemData> {
@@ -255,17 +254,6 @@ export const useBoardStore = defineStore('board', () => {
             items,
             sourceIndex,
             targetIndex,
-            bossOrders: bossStore.orders,
-            dailyActiveOrders: dailyOrderStore.activeOrders,
-        });
-    }
-
-    function isNeededByActiveOrder(itemId: string): boolean {
-        const bossStore = useBossStore();
-        const dailyOrderStore = useDailyOrderStore();
-        return BoardService.isNeededByActiveOrder({
-            itemId,
-            cells: cells.value,
             bossOrders: bossStore.orders,
             dailyActiveOrders: dailyOrderStore.activeOrders,
         });

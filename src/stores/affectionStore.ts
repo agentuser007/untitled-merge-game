@@ -6,7 +6,7 @@
 // ============================================================
 
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { globalBus } from '../core/EventBus';
 import { useConfigStore } from './configStore';
 import { useEnergyStore } from './energyStore';
@@ -176,7 +176,7 @@ export const useAffectionStore = defineStore('affection', () => {
         record.lastPurchaseDate = today;
         shopPurchaseHistory.value[itemId] = record;
 
-        const { resolveResult, affectionSelfCall } = applyShopItemEffect(item);
+        const { resolveResult } = applyShopItemEffect(item);
 
         if ((item?.effect?.type as string) === 'affection' && item.characterId) {
             addAffection(item.characterId, item.effect.value as number, 'gift');
