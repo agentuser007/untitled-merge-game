@@ -1,0 +1,36 @@
+{
+  "levels": [
+    { "level": 0, "name": "陌生人", "minPoints": 0, "maxPoints": 99 },
+    { "level": 1, "name": "熟识", "minPoints": 100, "maxPoints": 299 },
+    { "level": 2, "name": "好友", "minPoints": 300, "maxPoints": 599 },
+    { "level": 3, "name": "暧昧", "minPoints": 600, "maxPoints": 999 },
+    { "level": 4, "name": "心动", "minPoints": 1000, "maxPoints": 1499 },
+    { "level": 5, "name": "牵绊", "minPoints": 1500, "maxPoints": 99999 }
+  ],
+  "characters": [
+    { "id": "morven", "name": "林墨白", "nameEn": "Morven", "color": "#7B68EE", "avatar": "assets/avatar/morven_no_bg.png", "background": "assets/avatar/morven_bg.webp" },
+    { "id": "daniel", "name": "Daniel", "nameEn": "Daniel", "color": "#4169E1", "avatar": "assets/avatar/daniel_no_bg.png", "background": "assets/avatar/daniel_bg.webp" },
+    { "id": "vincent", "name": "司徒渊", "nameEn": "Vincent", "color": "#483D8B", "avatar": "assets/avatar/vincent_no_bg.png", "background": "assets/avatar/vincent_bg.webp" },
+    { "id": "leo", "name": "陆之昂", "nameEn": "Leo", "color": "#FF6347", "avatar": "assets/avatar/leo_no_bg.png", "background": "assets/avatar/leo_bg.webp" }
+  ],
+  "bossToCharacter": {
+    "0": "morven",
+    "1": "daniel",
+    "2": "vincent",
+    "3": "leo"
+  },
+  "sources": {
+    "bossDefeat": { "base": 15, "perLoop": 3 },
+    "vnStorySR": 20,
+    "vnStorySSR": 50,
+    "touchBase": { "min": 1, "max": 8 },
+    "dailyOrderBonus": 15,
+    "specialEvent": { "min": 30, "max": 100 }
+  },
+  "touchCooldown": 3000,
+  "dailyTouchBonus": { "threshold": 10, "bonus": 20 },
+  "affectionCoins": {
+    "earnRate": 1,
+    "levelUpBonuses": { "1": 50, "2": 100, "3": 200, "4": 300, "5": 500 }
+  }
+}

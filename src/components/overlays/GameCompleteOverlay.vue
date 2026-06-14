@@ -49,7 +49,7 @@ function restart() {
 .complete-title {
   font-size: 32px;
   font-weight: 900;
-  color: white;
+  color: var(--text-primary);
   margin-bottom: 8px;
   text-shadow: 0 2px 10px rgba(255, 107, 157, 0.6);
 }
@@ -71,7 +71,7 @@ function restart() {
   border: none;
   border-radius: 25px;
   background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
-  color: white;
+  color: var(--text-primary);
   font-size: 16px;
   font-weight: 700;
   font-family: 'Jiangcheng Yuanti', inherit;

@@ -1,0 +1,5 @@
+export * from './core.schema'
+export * from './economy.schema'
+export * from './affection.schema'
+export * from './loop.schema'
+export { CONFIG_SCHEMAS, validateConfig, type ConfigKey } from './registry'

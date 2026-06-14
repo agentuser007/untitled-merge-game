@@ -156,6 +156,11 @@ watch(
         const playerFullText = i18nStore.emoji('thought') + ' ' + dialogueStore.playerText;
         await typewrite(playerFullText, displayedPlayerText, isPlayerTyping, 25);
       }
+
+      // Sync typing state back to store
+      if (dialogueStore.isOpen) {
+        dialogueStore.isTyping = false;
+      }
     } else {
       // Dialogue closed — clean up
       clearTimers();
@@ -288,7 +293,7 @@ onBeforeUnmount(() => {
   font-size: 13px;
   color: var(--accent-pink);
   font-weight: 600;
-  display: none;
+  font-style: italic;
   margin-bottom: 8px;
 }
 
@@ -324,7 +329,7 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: 20px;
   background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
-  color: white;
+  color: var(--text-primary);
   font-size: 13px;
   font-weight: 700;
   font-family: 'Jiangcheng Yuanti', inherit;

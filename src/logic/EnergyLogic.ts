@@ -1,12 +1,14 @@
 // ============================================================
 // EnergyLogic.ts — Pure Energy Business Logic + State Machine
 // ============================================================
-// NO DOM references. Emits events via EventBus.
+// NO DOM references. Returns events arrays (no globalBus).
+// Timer management lives in the Store layer; this class
+// provides tick() for pure regen computation.
 // State Machine: FULL → REGENNING → EMPTY (and back)
 // ============================================================
 
 import { StateMachine } from '../core/StateMachine';
-import { globalBus } from '../core/EventBus';
+import type { LogicEvent } from './BoardLogic';
 
 export interface GameConfig {
   ENERGY_REGEN_CAP: number;
@@ -16,9 +18,11 @@ export interface GameConfig {
   ENERGY_COST_PER_SPAWN: number;
 }
 
-export interface EnergyChangedEvent {
-  current: number;
-  max: number;
+export interface RegenTickResult {
+  newCurrent: number;
+  previousCurrent: number;
+  changed: boolean;
+  events: LogicEvent[];
 }
 
 export class EnergyLogic {
@@ -27,18 +31,21 @@ export class EnergyLogic {
   current: number;
   regenInterval: number;
   regenAmount: number;
-  regenTimer: any | null;
   fsm: StateMachine;
 
   constructor(gameConfig: GameConfig) {
+    if (!gameConfig.ENERGY_REGEN_INTERVAL || gameConfig.ENERGY_REGEN_INTERVAL <= 0) {
+      throw new Error('[EnergyLogic] ENERGY_REGEN_INTERVAL is required and must be > 0');
+    }
+    if (!gameConfig.ENERGY_REGEN_AMOUNT || gameConfig.ENERGY_REGEN_AMOUNT <= 0) {
+      throw new Error('[EnergyLogic] ENERGY_REGEN_AMOUNT is required and must be > 0');
+    }
     this.regenCap = gameConfig.ENERGY_REGEN_CAP || gameConfig.MAX_ENERGY;
-    this.max = this.regenCap; // kept for FSM / display compatibility
+    this.max = this.regenCap;
     this.current = this.regenCap;
-    this.regenInterval = gameConfig.ENERGY_REGEN_INTERVAL || 3000;
-    this.regenAmount = gameConfig.ENERGY_REGEN_AMOUNT || 1;
-    this.regenTimer = null;
+    this.regenInterval = gameConfig.ENERGY_REGEN_INTERVAL;
+    this.regenAmount = gameConfig.ENERGY_REGEN_AMOUNT;
 
-    // State Machine
     this.fsm = new StateMachine({
       name: 'EnergyFSM',
       initial: this.current >= this.regenCap ? 'FULL' : 'REGENNING',
@@ -55,65 +62,53 @@ export class EnergyLogic {
     return this.current >= amount;
   }
 
-  spend(amount?: number): boolean {
+  spend(amount?: number): { success: boolean; events: LogicEvent[] } {
     amount = amount ?? 1;
-    if (!this.canSpend(amount)) return false;
+    if (!this.canSpend(amount)) return { success: false, events: [] };
     this.current -= amount;
-    this._emitChanged();
+    const events = this._changedEvents();
     this._updateFSM();
-    return true;
+    return { success: true, events };
   }
 
-  recover(amount: number): void {
-    // No hard cap — items/rewards can push current above regenCap freely
+  recover(amount: number): LogicEvent[] {
     this.current = this.current + amount;
-    this._emitChanged();
+    const events = this._changedEvents();
     this._updateFSM();
+    return events;
   }
 
-  setMax(newMax: number): void {
+  setMax(newMax: number): LogicEvent[] {
     this.max = newMax;
-    this.regenCap = newMax; // sync regenCap so natural recovery & UI reflect new cap
-    // Do NOT cap current — items/rewards may have pushed it above max
-    this._emitChanged();
+    this.regenCap = newMax;
+    const events = this._changedEvents();
     this._updateFSM();
+    return events;
   }
 
-  setRegenCap(newCap: number): void {
-    // Only changes regenCap (natural recovery ceiling), NOT max
+  setRegenCap(newCap: number): LogicEvent[] {
     this.regenCap = newCap;
-    this._emitChanged();
+    const events = this._changedEvents();
     this._updateFSM();
+    return events;
   }
 
-  setRegenInterval(newInterval: number): void {
-    this.regenInterval = newInterval;
-    this.stopRegen();
-    this.startRegen();
+  shouldRegen(): boolean {
+    return this.current < this.regenCap;
   }
 
-  startRegen(): void {
-    this.stopRegen();
-    this.regenTimer = setInterval(() => {
-      // Natural regen stops at regenCap, not at max
-      if (this.current < this.regenCap) {
-        this.current += this.regenAmount;
-        this.current = Math.min(this.current, this.regenCap);
-        this._emitChanged();
-        this._updateFSM();
-      }
-    }, this.regenInterval);
-  }
-
-  stopRegen(): void {
-    if (this.regenTimer) {
-      clearInterval(this.regenTimer);
-      this.regenTimer = null;
+  tick(): RegenTickResult {
+    if (this.current >= this.regenCap) {
+      return { newCurrent: this.current, previousCurrent: this.current, changed: false, events: [] };
     }
+    const previousCurrent = this.current;
+    this.current = Math.min(this.current + this.regenAmount, this.regenCap);
+    const events = this._changedEvents();
+    this._updateFSM();
+    return { newCurrent: this.current, previousCurrent, changed: true, events };
   }
 
   _updateFSM(): void {
-    // FULL when current >= regenCap (natural regen ceiling)
     if (this.current >= this.regenCap && !this.fsm.is('FULL')) {
       if (this.fsm.can('FILL')) this.fsm.send('FILL');
     } else if (this.current <= 0 && !this.fsm.is('EMPTY')) {
@@ -124,14 +119,7 @@ export class EnergyLogic {
     }
   }
 
-  _emitChanged(): void {
-    globalBus.emit('energy:changed', {
-      current: this.current,
-      max: this.regenCap // display denominator = regenCap
-    } as EnergyChangedEvent);
-  }
-
-  destroy(): void {
-    this.stopRegen();
+  _changedEvents(): LogicEvent[] {
+    return [{ type: 'energy:changed', payload: { current: this.current, max: this.regenCap } }];
   }
 }

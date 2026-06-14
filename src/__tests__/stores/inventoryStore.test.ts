@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useInventoryStore } from '../../stores/inventoryStore'
 
-describe('inventoryStore — C8: slot-count capacity model', () => {
+describe('inventoryStore — unlimited capacity model', () => {
   let store: ReturnType<typeof useInventoryStore>
 
   beforeEach(() => {
@@ -16,14 +16,14 @@ describe('inventoryStore — C8: slot-count capacity model', () => {
     expect(store.isFull).toBe(false)
   })
 
-  it('C8: totalItems counts occupied slots (unique item IDs), not total count', () => {
+  it('totalItems counts occupied slots (unique item IDs), not total count', () => {
     store.addItem('item_a', 3)
     expect(store.totalItems).toBe(1)
     store.addItem('item_b', 5)
     expect(store.totalItems).toBe(2)
   })
 
-  it('C8: addItem for existing item ID does not increase slot count', () => {
+  it('addItem for existing item ID does not increase slot count', () => {
     store.addItem('item_a', 2)
     expect(store.totalItems).toBe(1)
     store.addItem('item_a', 3)
@@ -31,24 +31,24 @@ describe('inventoryStore — C8: slot-count capacity model', () => {
     expect(store.getCount('item_a')).toBe(5)
   })
 
-  it('isFull when slots reach maxSlots', () => {
-    for (let i = 0; i < 20; i++) {
+  it('isFull is always false (unlimited capacity)', () => {
+    for (let i = 0; i < 100; i++) {
       store.addItem(`item_${i}`, 1)
     }
-    expect(store.isFull).toBe(true)
-    expect(store.totalItems).toBe(20)
+    expect(store.isFull).toBe(false)
+    expect(store.totalItems).toBe(100)
   })
 
-  it('addItem fails when full (no available slots for new item)', () => {
-    for (let i = 0; i < 20; i++) {
+  it('addItem always succeeds (unlimited capacity)', () => {
+    for (let i = 0; i < 100; i++) {
       store.addItem(`item_${i}`, 1)
     }
     const result = store.addItem('new_item', 1)
-    expect(result).toBe(false)
+    expect(result).toBe(true)
   })
 
-  it('addItem succeeds for existing item even when full', () => {
-    for (let i = 0; i < 20; i++) {
+  it('addItem succeeds for existing item regardless of how many items exist', () => {
+    for (let i = 0; i < 100; i++) {
       store.addItem(`item_${i}`, 1)
     }
     const result = store.addItem('item_0', 5)
@@ -71,15 +71,16 @@ describe('inventoryStore — C8: slot-count capacity model', () => {
     expect(store.isEmpty).toBe(true)
   })
 
-  it('availableSlots = maxSlots - totalItems', () => {
+  it('availableSlots is always Infinity (unlimited capacity)', () => {
     store.addItem('item_a', 1)
     store.addItem('item_b', 1)
-    expect(store.availableSlots).toBe(18)
+    expect(store.availableSlots).toBe(Infinity)
   })
 
-  it('expandSlots increases maxSlots', () => {
+  it('expandSlots is a no-op (unlimited capacity)', () => {
+    const before = store.maxSlots
     store.expandSlots(5)
-    expect(store.maxSlots).toBe(25)
+    expect(store.maxSlots).toBe(before)
   })
 
   it('hasItem works', () => {
@@ -111,5 +112,15 @@ describe('inventoryStore — C8: slot-count capacity model', () => {
     expect(store.getCount('a')).toBe(3)
     expect(store.getCount('b')).toBe(1)
     expect(store.totalItems).toBe(2)
+  })
+
+  it('deserialize handles null maxSlots (serialized Infinity) as Infinity', () => {
+    store.addItem('a', 1)
+    const data = store.serialize()
+    // JSON.stringify turns Infinity into null
+    ;(data as any).maxSlots = null
+    store.clear()
+    store.deserialize(data)
+    expect(store.maxSlots).toBe(Infinity)
   })
 })

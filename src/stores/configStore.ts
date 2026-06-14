@@ -5,158 +5,129 @@
 // ============================================================
 
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
-
-// Type definitions
-export interface GameConfig {
-    BOARD_COLS: number;
-    BOARD_ROWS: number;
-    MAX_ENERGY: number;
-    ENERGY_REGEN_INTERVAL: number;
-    ENERGY_REGEN_CAP: number;
-    [key: string]: any;
-}
-
-export interface ItemData {
-    id: string;
-    name: string;
-    emoji: string;
-    level: number;
-    chain: string;
-    type: string;
-    nextId?: string;
-    sellPrice?: number;
-    color?: string;
-    sellable?: boolean;
-    description?: string;
-    energyRecover?: number;
-    [key: string]: any;
-}
-
-export interface GeneratorData {
-    id: string;
-    itemId: string;
-    interval: number;
-    [key: string]: any;
-}
-
-export interface LevelData {
-    id: number;
-    bossId: string;
-    bossName: string;
-    bossAvatar: string;
-    hp: number;
-    [key: string]: any;
-}
+import { ref, computed } from 'vue';
+import type {
+    GameSettingsConfig,
+    GameItem,
+    GeneratorConfig,
+    LevelData,
+    GachaRarityConfig,
+    GachaCostConfig,
+    GachaSubWeights,
+    GachaPoolItem,
+    CGStory,
+    LoopRule,
+    LoopNarrative,
+    LoopEvent,
+    ChainId,
+    HeroineUpgrade,
+    UIAnimationConfig,
+    UIColorsConfig,
+    DialogueConfig,
+    UITextConfig,
+    Achievement,
+    DailyOrder,
+    ShopItem,
+    ItemEffectsConfig,
+    BoardEconomyConfig,
+    BossProgressionConfig,
+    GachaSimpleConfig,
+    AffectionConfig,
+    TouchInteractionsConfig,
+    CharacterProfile,
+    AffectionShopConfig,
+    DailyOrderConfig,
+    SettingsData,
+    UITimerConfig,
+    UIColorThemeConfig,
+    UILayoutConfig,
+} from '@/types/game';
+import { validateConfig, type ConfigKey } from '@/schemas';
+import { deepMerge } from '@/core/deepMerge';
 
 export const useConfigStore = defineStore('config', () => {
     // Reactive state
-    const gameConfig = ref<GameConfig>({} as GameConfig);
-    const items = ref<Record<string, ItemData>>({});
-    const generators = ref<Record<string, GeneratorData>>({});
+    const gameConfig = ref<GameSettingsConfig>({} as GameSettingsConfig);
+    const items = ref<Record<string, GameItem>>({});
+    const generators = ref<Record<string, GeneratorConfig>>({});
     const lockedCellsInitial = ref<number[]>([]);
-    const unlockPerBoss = ref<any[]>([]);
+    const unlockPerBoss = ref<number[][]>([]);
     const levels = ref<LevelData[]>([]);
-    const uiText = ref<Record<string, any>>({});
-    const recycleEnergyTable = ref<Record<string, any>>({});
-    const dailyOrderConfig = ref<Record<string, any>>({});
-    const dailyOrderPool = ref<any[]>([]);
+    const uiText = ref<UITextConfig>({} as UITextConfig);
+    const recycleEnergyTable = ref<Record<string, number>>({});
+    const dailyOrderConfig = ref<DailyOrderConfig>({} as DailyOrderConfig);
+    const dailyOrderPool = ref<DailyOrder[]>([]);
     const cellUnlockCosts = ref<number[]>([]);
-    const heroineUpgrades = ref<any[]>([]);
-    const gachaPool = ref<any[]>([]);
-    const achievementData = ref<any[]>([]);
-    const uiAnimation = ref<Record<string, any>>({});
-    const uiColors = ref<Record<string, any>>({});
-    const dialogueConfig = ref<Record<string, any>>({});
+    const heroineUpgrades = ref<HeroineUpgrade[]>([]);
+    const gachaPool = ref<GachaPoolItem[]>([]);
+    const achievementData = ref<Achievement[]>([]);
+    const uiAnimation = ref<UIAnimationConfig>({} as UIAnimationConfig);
+    const uiColors = ref<UIColorsConfig>({} as UIColorsConfig);
+    const dialogueConfig = ref<DialogueConfig>({} as DialogueConfig);
+    const uiTimers = ref<UITimerConfig>({} as UITimerConfig);
+    const uiColorTheme = ref<UIColorThemeConfig>({} as UIColorThemeConfig);
+    const uiLayout = ref<UILayoutConfig>({} as UILayoutConfig);
     
     // Gacha pool data
-    const gachaRarityConfig = ref<Record<string, any>>({});
-    const gachaCost = ref<Record<string, any>>({});
-    const gachaSubWeights = ref<Record<string, any>>({});
-    const gachaPoolV2 = ref<any[]>([]);
-    const cgStories = ref<Record<string, any>>({});
-    const loopRules = ref<Record<string, any>>({});
-    const loopNarratives = ref<Record<string, any>>({});
-    const loopEvents = ref<Record<string, any>>({});
-    const chains = ref<any[]>([]);
+    const gachaRarityConfig = ref<Record<string, GachaRarityConfig>>({});
+    const gachaCost = ref<GachaCostConfig>({} as GachaCostConfig);
+    const gachaSubWeights = ref<GachaSubWeights>({});
+    const gachaPoolV2 = ref<GachaPoolItem[]>([]);
+    const cgStories = ref<Record<string, CGStory>>({});
+    const loopRules = ref<Record<string, LoopRule>>({});
+    const loopNarratives = ref<Record<string, LoopNarrative>>({});
+    const loopEvents = ref<Record<string, LoopEvent>>({});
+    const chains = ref<ChainId[]>([]);
     const chainNames = ref<Record<string, string>>({});
     const chainIcons = ref<Record<string, string>>({});
     const chainToGen = ref<Record<string, string>>({});
     const chainItemPrefix = ref<Record<string, string>>({});
     const fragmentToGenerator = ref<number>(60);
     const fragmentToStory = ref<number>(60);
-    const recycleEnergy = ref<Record<string, any>>({});
+    const recycleEnergy = ref<Record<string, number>>({});
+    
+    const affectionConfig = ref<AffectionConfig>({} as AffectionConfig);
+    const touchInteractions = ref<TouchInteractionsConfig>({} as TouchInteractionsConfig);
+    const characterProfiles = ref<Record<string, CharacterProfile>>({});
+    const affectionShop = ref<AffectionShopConfig>({} as AffectionShopConfig);
+
+    // Pluggable config: item effects, board economy, boss progression, gacha
+    const itemEffects = ref<ItemEffectsConfig>({} as ItemEffectsConfig);
+    const boardEconomy = ref<BoardEconomyConfig>({} as BoardEconomyConfig);
+    const bossProgression = ref<BossProgressionConfig>({} as BossProgressionConfig);
+    const gachaConfig = ref<GachaSimpleConfig>({} as GachaSimpleConfig);
     
     // Shop items
-    const shopItems = ref([
-        { id: 'shop_energy_small', name: '小瓶体力药水', icon: '⚡', description: '恢复30点体力', cost: 50, effect: 'add_energy_item', value: { energy: 30 }, i18nName: 'shopEnergySmall', i18nDesc: 'shopEnergySmallDesc' },
-        { id: 'shop_energy_large', name: '大瓶体力药水', icon: '🔋', description: '恢复80点体力', cost: 120, effect: 'add_energy_item', value: { energy: 80 }, i18nName: 'shopEnergyLarge', i18nDesc: 'shopEnergyLargeDesc' },
-        { id: 'shop_joker', name: '百搭牌', icon: '🃏', description: '放置到棋盘，与任意物品合成为更高级', cost: 200, effect: 'add_joker', value: {}, i18nName: 'shopJoker', i18nDesc: 'shopJokerDesc' },
-        { id: 'shop_scissor', name: '剪刀', icon: '✂️', description: '点击棋盘物品拆分为2个低级物品', cost: 150, effect: 'add_scissor', value: {}, i18nName: 'shopScissor', i18nDesc: 'shopScissorDesc' },
-        { id: 'shop_clear_lv1', name: '扫帚', icon: '🧹', description: '清除所有Lv.1物品，回收体力', cost: 80, effect: 'clear_lv1', value: {}, i18nName: 'shopClearLv1', i18nDesc: 'shopClearLv1Desc' },
-    ]);
+    const shopItems = ref<ShopItem[]>([]);
 
-    /**
-     * Deep merge utility - recursively merges overlay onto base data
-     * - Plain objects: merge by key, overlay wins for primitives
-     * - Arrays with `id` fields: match elements by `id`, then recursively merge
-     * - Arrays without `id`: merge by index
-     * - Primitives: overlay wins if present
-     */
-    function deepMerge(base: any, overlay: any): any {
-        // If overlay is null/undefined, keep base unchanged
-        if (overlay === null || overlay === undefined) return base;
-        // If overlay is not an object (primitive), it wins
-        if (typeof overlay !== 'object') return overlay;
-        // If base is not an object (primitive) but overlay is, overlay wins
-        if (typeof base !== 'object' || base === null) return overlay;
+    // Loading state
+    const isLoading = ref(false);
+    const loadError = ref<string | null>(null);
+    const isDataReady = computed(() => !isLoading.value && loadError.value === null && Object.keys(gameConfig.value).length > 0);
 
-        // Both are arrays
-        if (Array.isArray(base) && Array.isArray(overlay)) {
-            // If both arrays have elements with 'id', merge by id matching
-            if (base.length > 0 && overlay.length > 0 &&
-                base[0] && typeof base[0] === 'object' && 'id' in base[0] &&
-                overlay[0] && typeof overlay[0] === 'object' && 'id' in overlay[0]) {
-                // Build a lookup map from overlay elements by id
-                const overlayById: Record<string, any> = {};
-                for (const item of overlay) {
-                    if (item && typeof item === 'object' && 'id' in item) {
-                        overlayById[item.id] = item;
-                    }
-                }
-                // Map over base: merge matched overlay element, keep unmatched base element
-                const result = base.map((baseEl: any) => {
-                    if (baseEl && typeof baseEl === 'object' && 'id' in baseEl && baseEl.id in overlayById) {
-                        return deepMerge(baseEl, overlayById[baseEl.id]);
-                    }
-                    return baseEl;
-                });
-                // Append overlay elements whose id is NOT in base
-                const baseIds = new Set(base.filter((el: any) => el && typeof el === 'object' && 'id' in el).map((el: any) => el.id));
-                for (const item of overlay) {
-                    if (item && typeof item === 'object' && 'id' in item && !baseIds.has(item.id)) {
-                        result.push(item);
-                    }
-                }
-                return result;
-            }
-            // Fallback: merge by index
-            return base.map((item: any, i: number) => {
-                return i < overlay.length ? deepMerge(item, overlay[i]) : item;
-            });
-        }
 
-        // Both are plain objects: merge by key
-        const result = Object.assign({}, base);
-        const keys = Object.keys(overlay);
-        for (const key of keys) {
-            if (key in result) {
-                result[key] = deepMerge(result[key], overlay[key]);
-            } else {
-                result[key] = overlay[key];
-            }
-        }
-        return result;
+    function getItem(id: string): GameItem | undefined {
+        return items.value[id];
+    }
+
+    function getGenerator(id: string): GeneratorConfig | undefined {
+        return generators.value[id];
+    }
+
+    function getCharacter(id: string): CharacterProfile | undefined {
+        return characterProfiles.value[id];
+    }
+
+    function getLevel(idx: number): LevelData | undefined {
+        return levels.value[idx];
+    }
+
+    function getShopItem(id: string): ShopItem | undefined {
+        return shopItems.value.find(item => item.id === id);
+    }
+
+    function getChainName(chainId: string): string {
+        return chainNames.value[chainId] ?? chainId;
     }
 
     /**
@@ -167,7 +138,10 @@ export const useConfigStore = defineStore('config', () => {
         const isEnglish = currentLocale === 'en';
         const basePath = '/assets';
         const cacheBust = '?v=' + Date.now();
-        
+
+        isLoading.value = true;
+        loadError.value = null;
+
         try {
             // Load base data
             const baseData = await Promise.all([
@@ -182,6 +156,10 @@ export const useConfigStore = defineStore('config', () => {
                 fetch(`${basePath}/data/loop_narratives.json${cacheBust}`).then(r => r.json()),
                 fetch(`${basePath}/data/loop_events.json${cacheBust}`).then(r => r.json()),
                 fetch(`${basePath}/data/cg_stories.json${cacheBust}`).then(r => r.json()),
+                fetch(`${basePath}/data/affection_config.json${cacheBust}`).then(r => r.json()),
+                fetch(`${basePath}/data/touch_interactions.json${cacheBust}`).then(r => r.json()),
+                fetch(`${basePath}/data/character_profiles.json${cacheBust}`).then(r => r.json()),
+                fetch(`${basePath}/data/affection_shop.json${cacheBust}`).then(r => r.json()),
             ]);
 
             // Load English data (for merging)
@@ -197,6 +175,10 @@ export const useConfigStore = defineStore('config', () => {
                 fetch(`${basePath}/data/en/loop_narratives.json${cacheBust}`).then(r => r.json()).catch(() => ({})),
                 fetch(`${basePath}/data/en/loop_events.json${cacheBust}`).then(r => r.json()).catch(() => ({})),
                 fetch(`${basePath}/data/en/cg_stories.json${cacheBust}`).then(r => r.json()).catch(() => ({})),
+                fetch(`${basePath}/data/en/affection_config.json${cacheBust}`).then(r => r.json()).catch(() => ({})),
+                fetch(`${basePath}/data/en/touch_interactions.json${cacheBust}`).then(r => r.json()).catch(() => ({})),
+                fetch(`${basePath}/data/en/character_profiles.json${cacheBust}`).then(r => r.json()).catch(() => ({})),
+                fetch(`${basePath}/data/en/affection_shop.json${cacheBust}`).then(r => r.json()).catch(() => ({})),
             ]);
 
             // Merge data: only apply English overlay when locale is English
@@ -204,15 +186,48 @@ export const useConfigStore = defineStore('config', () => {
                 ? baseData.map((base, index) => deepMerge(base, enData[index]))
                 : baseData;
 
-            // Assign to refs — extract nested fields from settings.json (mergedData[0])
-            const settings = mergedData[0];
+            // Validate merged data — if overlay broke the data, fall back to base
+            function validateWithOverlayFallback<K extends ConfigKey>(key: K, merged: unknown, base: unknown) {
+                try {
+                    return validateConfig(key, merged)
+                } catch (e) {
+                    if (isEnglish) {
+                        try {
+                            const baseValidated = validateConfig(key, base)
+                            console.warn(`[ConfigStore] en overlay invalid for ${key}, using base data`)
+                            return baseValidated
+                        } catch {
+                            throw e
+                        }
+                    }
+                    throw e
+                }
+            }
+
+            const settings = validateWithOverlayFallback('settings', mergedData[0], baseData[0]) as SettingsData;
+            const validatedItems = validateWithOverlayFallback('items', mergedData[1], baseData[1]) as Record<string, GameItem>;
+            const validatedGenerators = validateWithOverlayFallback('generators', mergedData[2], baseData[2]) as Record<string, GeneratorConfig>;
+            const validatedLevels = validateWithOverlayFallback('levels', mergedData[3], baseData[3]) as LevelData[];
+            const validatedDailyOrders = validateWithOverlayFallback('dailyOrders', mergedData[4], baseData[4]);
+            const validatedGacha = validateWithOverlayFallback('gachaPool', mergedData[5], baseData[5]);
+            const validatedAchievements = validateWithOverlayFallback('achievements', mergedData[6], baseData[6]);
+            const validatedLoopRules = validateWithOverlayFallback('loopRules', mergedData[7], baseData[7]) as Record<string, LoopRule>;
+            const validatedLoopNarratives = validateWithOverlayFallback('loopNarratives', mergedData[8], baseData[8]) as Record<string, LoopNarrative>;
+            const validatedLoopEvents = validateWithOverlayFallback('loopEvents', mergedData[9], baseData[9]) as Record<string, LoopEvent>;
+            const validatedCgStories = validateWithOverlayFallback('cgStories', mergedData[10], baseData[10]) as Record<string, CGStory>;
+            const validatedAffectionConfig = validateWithOverlayFallback('affectionConfig', mergedData[11], baseData[11]) as AffectionConfig;
+            const validatedTouchInteractions = validateWithOverlayFallback('touchInteractions', mergedData[12], baseData[12]) as TouchInteractionsConfig;
+            const validatedCharacterProfiles = validateWithOverlayFallback('characterProfiles', mergedData[13], baseData[13]) as Record<string, CharacterProfile>;
+            const validatedAffectionShop = validateWithOverlayFallback('affectionShop', mergedData[14], baseData[14]) as AffectionShopConfig;
+
+            // Assign to refs — extract nested fields from settings.json
             gameConfig.value = settings.GAME_CONFIG || settings;
-            items.value = mergedData[1];
+            items.value = validatedItems;
             // NOTE: generators.json contains debug fields like "_cooldownOriginal" alongside "cooldown".
             // These are dev/test overrides (cooldown: 0 for instant testing) and should be ignored
             // by production code. Only the "cooldown" field is used at runtime.
-            generators.value = mergedData[2];
-            levels.value = mergedData[3];
+            generators.value = validatedGenerators;
+            levels.value = validatedLevels;
             lockedCellsInitial.value = settings.LOCKED_CELLS_INITIAL || [];
             unlockPerBoss.value = settings.UNLOCK_PER_BOSS || [];
             cellUnlockCosts.value = settings.CELL_UNLOCK_COSTS || [];
@@ -223,17 +238,20 @@ export const useConfigStore = defineStore('config', () => {
             uiText.value = settings.UI_TEXT || {};
             uiAnimation.value = settings.UI_ANIMATION || {};
             uiColors.value = settings.UI_COLORS || {};
+            uiTimers.value = settings.UI_TIMERS || {};
+            uiColorTheme.value = settings.UI_COLOR_THEME || {};
+            uiLayout.value = settings.UI_LAYOUT || {};
 
             // Extract arrays from wrapper objects
-            dailyOrderPool.value = mergedData[4]?.orderPool || [];
+            dailyOrderPool.value = validatedDailyOrders?.orderPool || [];
 
-            // Extract gacha_pool.json nested fields (mergedData[5])
-            const gacha = mergedData[5];
+            // Extract gacha_pool.json nested fields
+            const gacha = validatedGacha;
             gachaRarityConfig.value = gacha.rarityConfig || {};
             gachaCost.value = gacha.gachaCost || {};
             gachaSubWeights.value = gacha.subWeights || {};
-            gachaPoolV2.value = gacha.gachaPoolV2 || [];
-            gachaPool.value = gacha.gachaPoolV2 || [];
+            gachaPoolV2.value = (gacha.gachaPoolV2 as GachaPoolItem[]) || [];
+            gachaPool.value = (gacha.gachaPoolV2 as GachaPoolItem[]) || [];
             chains.value = gacha.chains || [];
             chainNames.value = gacha.chainNames || {};
             chainIcons.value = gacha.chainIcons || {};
@@ -243,25 +261,39 @@ export const useConfigStore = defineStore('config', () => {
             fragmentToStory.value = gacha.fragmentToStory ?? 60;
             recycleEnergy.value = gacha.recycleEnergy || {};
 
-            achievementData.value = mergedData[6]?.achievements || [];
-            loopRules.value = mergedData[7];
-            loopNarratives.value = mergedData[8];
-            loopEvents.value = mergedData[9];
-            cgStories.value = mergedData[10];
+            achievementData.value = validatedAchievements?.achievements || [];
+            loopRules.value = validatedLoopRules;
+            loopNarratives.value = validatedLoopNarratives;
+            loopEvents.value = validatedLoopEvents;
+            cgStories.value = validatedCgStories;
 
-            // Load additional constant data
-            // NOTE: ui-config.json overlaps with settings.json fields (UI_ANIMATION, UI_COLORS).
-            // ui-config.json values take precedence when present. Future refactor should consolidate
-            // these into a single source to avoid confusion about which file owns which setting.
-            const constants = await Promise.all([
-                fetch(`${basePath}/constants/ui-config.json${cacheBust}`).then(r => r.json()).catch(() => ({})),
+            affectionConfig.value = validatedAffectionConfig;
+            touchInteractions.value = validatedTouchInteractions;
+            characterProfiles.value = validatedCharacterProfiles;
+            affectionShop.value = validatedAffectionShop;
+
+            // Load pluggable config files
+            const [itemEffectsData, boardEconomyData, bossProgressionData, gachaConfigData, shopItemsData] = await Promise.all([
+                fetch(`${basePath}/data/item_effects.json${cacheBust}`).then(r => r.json()).catch(() => ({})),
+                fetch(`${basePath}/data/board_economy.json${cacheBust}`).then(r => r.json()).catch(() => ({})),
+                fetch(`${basePath}/data/boss_progression.json${cacheBust}`).then(r => r.json()).catch(() => ({})),
+                fetch(`${basePath}/data/gacha_config.json${cacheBust}`).then(r => r.json()).catch(() => ({})),
+                fetch(`${basePath}/data/shop_items.json${cacheBust}`).then(r => r.json()).catch(() => ([])),
             ]);
 
-            uiAnimation.value = constants[0]?.timers || constants[0]?.animation || uiAnimation.value;
-            uiColors.value = constants[0]?.colors || uiColors.value;
+            itemEffects.value = validateConfig('itemEffects', itemEffectsData);
+            boardEconomy.value = validateConfig('boardEconomy', boardEconomyData);
+            bossProgression.value = validateConfig('bossProgression', bossProgressionData);
+            gachaConfig.value = validateConfig('gachaConfig', gachaConfigData) as GachaSimpleConfig;
+            shopItems.value = validateConfig('shopItems', shopItemsData);
 
         } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
             console.error('[ConfigStore] Failed to load game data:', error);
+            loadError.value = message;
+            throw error;
+        } finally {
+            isLoading.value = false;
         }
     }
 
@@ -284,6 +316,9 @@ export const useConfigStore = defineStore('config', () => {
         uiAnimation,
         uiColors,
         dialogueConfig,
+        uiTimers,
+        uiColorTheme,
+        uiLayout,
         gachaRarityConfig,
         gachaCost,
         gachaSubWeights,
@@ -301,9 +336,28 @@ export const useConfigStore = defineStore('config', () => {
         fragmentToStory,
         recycleEnergy,
         shopItems,
+        affectionConfig,
+        touchInteractions,
+        characterProfiles,
+        affectionShop,
+        itemEffects,
+        boardEconomy,
+        bossProgression,
+        gachaConfig,
+        isLoading,
+        loadError,
+        isDataReady,
         
         // Actions
         loadGameData,
-        deepMerge
+        deepMerge,
+
+        // Getters
+        getItem,
+        getGenerator,
+        getCharacter,
+        getLevel,
+        getShopItem,
+        getChainName,
     };
 });

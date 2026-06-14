@@ -19,3 +19,5 @@ test-fix.js
 write_daily_orders.py
 write_data_files.py
 build.js
+chrome-profile/
+src/__tests__/

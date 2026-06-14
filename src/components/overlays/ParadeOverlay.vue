@@ -33,6 +33,9 @@
         </div>
       </div>
       <div class="parade-bottom-text">{{ i18nStore.t('parade.bottomText') }}</div>
+      <button class="parade-close-btn" @click="$emit('close')">
+        {{ i18nStore.t('parade.continue') || '继续' }}
+      </button>
     </div>
   </Transition>
 </template>
@@ -106,6 +109,7 @@ function startSparkleAnimation() {
   const sparkleCount = 50;
 
   // Initialize sparkles
+  // exempt: pure visual — no game state impact
   for (let i = 0; i < sparkleCount; i++) {
     sparkles.push({
       x: Math.random() * canvas.width,
@@ -124,12 +128,14 @@ function startSparkleAnimation() {
     for (const sparkle of sparkles) {
       sparkle.y -= sparkle.speed;
       sparkle.x += sparkle.drift;
+      // exempt: pure visual — no game state impact
       sparkle.opacity += (Math.random() - 0.5) * 0.05;
       sparkle.opacity = Math.max(0.1, Math.min(1, sparkle.opacity));
 
       // Reset sparkle if it goes off screen
       if (sparkle.y < -10) {
         sparkle.y = canvas.height + 10;
+        // exempt: pure visual — no game state impact
         sparkle.x = Math.random() * canvas.width;
       }
 
@@ -351,6 +357,24 @@ onBeforeUnmount(() => {
   text-align: center;
   color: rgba(255,255,255,0.8);
   font-size: 14px;
+}
+
+.parade-close-btn {
+  margin-top: 20px;
+  padding: 12px 40px;
+  border: none;
+  border-radius: 24px;
+  background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 10;
+  transition: transform 0.1s ease;
+}
+
+.parade-close-btn:active {
+  transform: scale(0.93);
 }
 
 /* Fade transition */

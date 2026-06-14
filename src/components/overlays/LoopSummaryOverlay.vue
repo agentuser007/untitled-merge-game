@@ -7,7 +7,7 @@
     <div v-if="visible" id="loop-summary-overlay">
       <div class="loop-summary-card">
         <div class="summary-loop-num">
-          {{ i18nStore.t('loop.loopComplete', { index: loopStore.loopIndex }) }}
+          {{ i18nStore.t('loop.loopComplete', { index: displayLoopIndex }) }}
         </div>
         <div class="summary-outro">{{ i18nStore.t('loop.congratsClear') }}</div>
         <div class="summary-tokens">
@@ -36,7 +36,7 @@
           </div>
         </div>
         <div class="summary-next">
-          {{ i18nStore.t('loop.nextLoop', { index: loopStore.loopIndex + 1, title: nextLoopTitle, hp: loopStore.getHpMultiplier(loopStore.loopIndex + 1), reward: loopStore.getRewardMultiplier(loopStore.loopIndex + 1) }) }}
+          {{ i18nStore.t('loop.nextLoop', { index: displayLoopIndex + 1, title: nextLoopTitle, hp: loopStore.getHpMultiplier(displayLoopIndex + 1), reward: loopStore.getRewardMultiplier(displayLoopIndex + 1) }) }}
         </div>
         <button class="summary-next-btn" @click="nextLoop">
           {{ i18nStore.t('loop.nextBtn') }}
@@ -55,6 +55,7 @@ import { useAchievementStore } from '../../stores/achievementStore';
 
 const props = defineProps<{
   visible: boolean;
+  targetLoopIndex?: number;
 }>();
 
 const emit = defineEmits<{
@@ -66,6 +67,8 @@ const loopStore = useLoopStore();
 const i18nStore = useI18nStore();
 const collectionStore = useCollectionStore();
 const achievementStore = useAchievementStore();
+
+const displayLoopIndex = computed(() => props.targetLoopIndex ?? loopStore.loopIndex);
 
 // --- Rewards data (set externally or computed) ---
 const rewards = ref({
@@ -109,7 +112,7 @@ const metaUpgradeItems = computed<MetaUpgradeItem[]>(() => {
 
 // --- Next loop title ---
 const nextLoopTitle = computed(() => {
-  return loopStore.getLoopTitle(loopStore.loopIndex + 1);
+  return loopStore.getLoopTitle(displayLoopIndex.value + 1);
 });
 
 // --- Compute rewards when overlay becomes visible ---
@@ -117,7 +120,8 @@ watch(
   () => props.visible,
   (isVisible) => {
     if (isVisible) {
-      const calculated = loopStore.calculateLoopRewards(loopStore.loopIndex, {
+      const idx = displayLoopIndex.value;
+      const calculated = loopStore.calculateLoopRewards(idx, {
         newDiscoveries: collectionStore.getNewDiscoveriesCountThisLoop(),
         achievementsUnlocked: achievementStore.getUnlockedCountThisLoop()
       });
@@ -158,7 +162,7 @@ function nextLoop() {
 }
 
 .loop-summary-card {
-  background: linear-gradient(145deg, #FFE1CC, #FFCCAC);
+  background: linear-gradient(145deg, #FFF5EE, #FFE1CC);
   border-radius: 20px;
   padding: 24px;
   max-width: 400px;
@@ -166,22 +170,21 @@ function nextLoop() {
   max-height: 85vh;
   overflow-y: auto;
   text-align: center;
-  border: 2px solid rgba(162,155,254,0.4);
-  box-shadow: 0 0 40px rgba(108,92,231,0.3);
+  border: 3.5px solid var(--warm-border, #CDA080);
+  box-shadow: 0 12px 36px rgba(138, 109, 85, 0.25);
   animation: loopCardIn 0.5s ease-out;
 }
 
 .summary-loop-num {
   font-size: 20px;
   font-weight: 800;
-  color: #a29bfe;
+  color: #F35683;
   margin-bottom: 8px;
-  text-shadow: 0 0 10px rgba(162,155,254,0.5);
 }
 
 .summary-outro {
   font-size: 14px;
-  color: #dfe6e9;
+  color: var(--text-heading);
   margin-bottom: 16px;
   line-height: 1.5;
 }
@@ -189,23 +192,24 @@ function nextLoop() {
 .summary-tokens {
   font-size: 18px;
   font-weight: 700;
-  color: #ffeaa7;
+  color: #E67E22;
   margin-bottom: 4px;
 }
 
 .summary-token-detail {
   font-size: 12px;
-  color: #b2bec3;
+  color: var(--warm-brown-icon);
   margin-bottom: 8px;
 }
 
 .summary-token-balance {
   font-size: 14px;
   font-weight: 600;
-  color: #81ecec;
+  color: var(--text-heading);
   margin-bottom: 16px;
   padding: 6px 12px;
-  background: rgba(129,236,236,0.1);
+  background: rgba(205, 160, 128, 0.2);
+  border: 1px solid rgba(138, 109, 85, 0.15);
   border-radius: 8px;
   display: inline-block;
 }
@@ -213,9 +217,9 @@ function nextLoop() {
 .summary-shop-title {
   font-size: 16px;
   font-weight: 700;
-  color: #ffeaa7;
+  color: var(--text-heading);
   margin: 12px 0 8px;
-  border-top: 1px solid rgba(255,255,255,0.1);
+  border-top: 1.5px dashed rgba(160, 120, 80, 0.25);
   padding-top: 12px;
 }
 
@@ -230,23 +234,25 @@ function nextLoop() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.45);
   border-radius: 12px;
   padding: 10px 12px;
   margin-bottom: 8px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1.5px solid rgba(160, 120, 80, 0.2);
   cursor: pointer;
-  transition: border-color 0.2s, opacity 0.2s;
+  transition: all 0.2s ease;
 }
 
 .meta-shop-item--maxed {
   opacity: 0.6;
   cursor: default;
-  border-color: rgba(255,255,255,0.03);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(160, 120, 80, 0.1);
 }
 
 .meta-shop-item--affordable {
-  opacity: 1;
+  background: rgba(255, 255, 255, 0.85);
+  border-color: var(--color-success);
 }
 
 .meta-shop-item-name {
@@ -254,26 +260,27 @@ function nextLoop() {
   text-align: left;
   font-size: 13px;
   font-weight: 700;
-  color: #dfe6e9;
+  color: var(--text-heading);
 }
 
 .meta-shop-item-cost {
   margin: 0 8px;
   font-size: 12px;
-  color: #ffeaa7;
+  color: #C97E4A;
 }
 
 .meta-shop-item-level {
   font-size: 0.85rem;
-  color: #81ecec;
+  color: var(--color-success);
 }
 
 .summary-next {
   font-size: 13px;
-  color: #b2bec3;
+  color: var(--warm-brown-icon);
   margin: 16px 0 12px;
   padding: 8px 12px;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(160, 120, 80, 0.15);
   border-radius: 8px;
 }
 

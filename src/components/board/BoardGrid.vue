@@ -3,7 +3,7 @@
     <BossHeader />
     <div class="board-frame">
       <div class="board-frame-inner">
-        <div id="game-grid" :style="gridStyle" :class="{ 'scissor-active': scissorActive }">
+        <div id="game-grid" :style="gridStyle" :class="{ 'scissor-active': scissorActive, 'upgrade-active': upgradeActive }">
           <GridCell
             v-for="(cell, index) in boardStore.cells"
             :key="index"
@@ -43,12 +43,23 @@ import BossHeader from './BossHeader.vue';
 import GridCell from './GridCell.vue';
 import ConfirmDialog from '../common/ConfirmDialog.vue';
 import { useDrag } from '../../composables/useDrag';
+import { useInventoryStore } from '../../stores/inventoryStore';
+import { useSaveStore } from '../../stores/saveStore';
+import { useI18nStore } from '../../stores/i18nStore';
+import { useApplyDeps } from '../../composables/useApplyDeps';
+import { applyResolveResult } from '../../composables/useGameLoop';
+import type { ResolveResult } from '../../services/ServiceResultTypes';
+import type { MergeResult } from '../../types/game';
 
 const boardStore = useBoardStore();
 const configStore = useConfigStore();
 const currencyStore = useCurrencyStore();
+const inventoryStore = useInventoryStore();
+const saveStore = useSaveStore();
+const i18nStore = useI18nStore();
 const audio = useAudio();
 const effects = useEffects();
+const applyDeps = useApplyDeps();
 
 const animMap: Record<number, string> = reactive({});
 
@@ -57,7 +68,11 @@ const unlockDialogMessage = ref('');
 const pendingUnlockIndex = ref<number | null>(null);
 
 const scissorActive = computed(() => {
-  return false;
+  return boardStore.scissorActive;
+});
+
+const upgradeActive = computed(() => {
+  return boardStore.upgradeActive;
 });
 
 const gridStyle = computed(() => {
@@ -75,7 +90,7 @@ function onAnimationEnd(index: number) {
   delete animMap[index];
 }
 
-function onBoardMerged(data: any) {
+function onBoardMerged(data: { sourceIndex: number; targetIndex: number; result: MergeResult }) {
   if (!data) return;
   const { targetIndex } = data;
   animMap[targetIndex] = 'merge-pop';
@@ -84,7 +99,7 @@ function onBoardMerged(data: any) {
   audio.playSound('merge');
 }
 
-function onBoardProduced(data: any) {
+function onBoardProduced(data: { generatorIndex: number; targetIndex: number; producedItemId: string }) {
   if (!data) return;
   const { generatorIndex, targetIndex } = data;
   animMap[targetIndex] = 'spawn-pop';
@@ -94,14 +109,14 @@ function onBoardProduced(data: any) {
   audio.playSound('pop');
 }
 
-function onBoardCellsUnlocked(data: any) {
+function onBoardCellsUnlocked(data: { indices: number[] }) {
   if (!data || !data.indices) return;
   for (const idx of data.indices) {
     animMap[idx] = 'unlock-anim';
   }
 }
 
-function onBoardItemConsumed(data: any) {
+function onBoardItemConsumed(data: { index: number; itemId: string }) {
   if (!data) return;
   const { index } = data;
   animMap[index] = 'merge-pop';
@@ -139,8 +154,6 @@ function onUnlockConfirm() {
   if (currencyStore.canAffordGold(cost)) {
     currencyStore.spendGold(cost);
     boardStore.unlockCells([pendingUnlockIndex.value]);
-  } else {
-    console.log('Not enough gold to unlock');
   }
   pendingUnlockIndex.value = null;
 }
@@ -154,15 +167,32 @@ function isItemGenerator(index: number): boolean {
 
 const { isDragging: _isDragging, dragSourceIndex: _dragSourceIndex, onPointerDown, onPointerMove, onPointerUp } = useDrag({
   threshold: 8,
-  onDragStart: (index, _event) => {
-    console.log('Drag started from cell:', index);
+  onDragStart: (_index, _event) => {
   },
-  onDragMove: (deltaX, deltaY, _event) => {
-    console.log('Dragging with delta:', deltaX, deltaY);
+  onDragMove: (_deltaX, _deltaY, _event) => {
   },
   onDragEnd: (fromIndex, toIndex) => {
     if (boardStore.isLocked(toIndex)) return;
     boardStore.merge(fromIndex, toIndex);
+  },
+  onDropOnBackpack: (fromIndex) => {
+    const itemId = boardStore.getCell(fromIndex);
+    if (!itemId) return;
+
+    const itemData = configStore.items[itemId];
+    if (!boardStore.canMoveToBackpack(itemData || {})) {
+      effects.showToast(i18nStore.t('board.cannotMoveToBackpack') || '生成器不能移入背包', 'error');
+      return;
+    }
+
+    inventoryStore.addItem(itemId, 1);
+    boardStore.clearCell(fromIndex);
+    boardStore.selectCell(null);
+    saveStore.saveAll();
+
+    const name = configStore.items[itemId]?.name || itemId;
+    effects.showToast(i18nStore.t('inventory.gotItem', { name }) || `物品已存入背包`, 'info');
+    audio.playSound('pop');
   },
   onTap: (index, _event) => {
     if (boardStore.isLocked(index)) {
@@ -170,8 +200,65 @@ const { isDragging: _isDragging, dragSourceIndex: _dragSourceIndex, onPointerDow
       return;
     }
 
+    // Scissor splitting mode
+    if (boardStore.scissorActive) {
+      const result = boardStore.useScissorOnItem(index);
+      if (result.success) {
+        boardStore.scissorActive = false;
+        inventoryStore.removeItem(configStore.itemEffects.toolItems.scissor, 1);
+        if (result.secondItemToInventory) {
+          inventoryStore.addItem(result.secondItemToInventory, 1);
+          effects.showToast(i18nStore.t('inventory.scissorSplitToInventory') || '拆分成功，第二个物品已存入背包', 'info');
+        } else {
+          const itemId = boardStore.getCell(index);
+          const name = configStore.items[itemId || '']?.name || '';
+          effects.showToast(i18nStore.t('inventory.scissorSuccess', { name }) || `成功拆分物品`, 'info');
+        }
+        saveStore.saveAll();
+        audio.playSound('merge');
+      } else {
+        effects.showToast(i18nStore.t('inventory.scissorFailNoSpace') || i18nStore.t('inventory.scissorFail' + result.reason) || `拆分失败`, 'error');
+      }
+      return;
+    }
+
+    // Upgrade card mode
+    if (boardStore.upgradeActive) {
+      const itemId = boardStore.getCell(index);
+      if (!itemId) return;
+      const itemData = configStore.items[itemId];
+      if (itemData && itemData.nextId) {
+        boardStore.placeItem(index, itemData.nextId);
+        boardStore.upgradeActive = false;
+        inventoryStore.removeItem('sr_upgrade_1', 1);
+        saveStore.saveAll();
+        
+        const nextName = configStore.items[itemData.nextId]?.name || itemData.nextId;
+        effects.showToast(i18nStore.t('inventory.upgradeSuccess', { oldName: itemData.name, newName: nextName }) || `升级成功`, 'info');
+        audio.playSound('merge');
+      } else {
+        effects.showToast(i18nStore.t('inventory.itemNotUpgradable') || '该物品无法升级！', 'error');
+      }
+      return;
+    }
+
     if (isItemGenerator(index)) {
-      boardStore.produceFromGenerator(index);
+      boardStore.selectCell(index);
+      const result = boardStore.produceFromGenerator(index);
+      if (result.resolveResult) {
+        applyResolveResult(result.resolveResult, applyDeps);
+      }
+      if (!result.success) {
+        if (result.reason === 'board_full') {
+          effects.showToast(i18nStore.t('board.boardFull') || '棋盘已满，请先合成或回收物品！', 'error');
+        } else if (result.reason === 'no_energy') {
+          effects.showToast(i18nStore.t('board.noEnergy') || '体力不足', 'error');
+        } else if (result.reason === 'cooldown') {
+          effects.showToast(i18nStore.t('board.cooldown') || '生成器冷却中', 'error');
+        }
+      } else {
+        saveStore.debouncedSave();
+      }
       return;
     }
     
@@ -185,6 +272,7 @@ const { isDragging: _isDragging, dragSourceIndex: _dragSourceIndex, onPointerDow
     } else {
       boardStore.merge(currentSelected, index);
       boardStore.selectCell(null);
+      saveStore.debouncedSave();
     }
   }
 });
@@ -216,7 +304,7 @@ const { isDragging: _isDragging, dragSourceIndex: _dragSourceIndex, onPointerDow
   border: none;
   border-radius: 0 0 20px 20px;
   background: var(--grid-area-bg);
-  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.41);
+  box-shadow: var(--shadow-board-outer);
   overflow: hidden;
   display: block;
   box-sizing: border-box;
@@ -270,9 +358,22 @@ const { isDragging: _isDragging, dragSourceIndex: _dragSourceIndex, onPointerDow
   outline: 3px solid var(--scissor-color);
   outline-offset: -3px;
 }
-#game-grid.scissor-active :deep(.grid-cell:not(.locked):hover) {
-  background: rgba(156, 39, 176, 0.15);
-  cursor: crosshair;
+@media (hover: hover) {
+  #game-grid.scissor-active :deep(.grid-cell:not(.locked):hover) {
+    background: rgba(156, 39, 176, 0.15);
+    cursor: crosshair;
+  }
+}
+
+#game-grid.upgrade-active {
+  outline: 3px solid var(--color-reward);
+  outline-offset: -3px;
+}
+@media (hover: hover) {
+  #game-grid.upgrade-active :deep(.grid-cell:not(.locked):hover) {
+    background: rgba(255, 152, 0, 0.15);
+    cursor: pointer;
+  }
 }
 
 @media (max-height: 760px) {

@@ -23,20 +23,58 @@ import { useBossStore } from './bossStore';
 import { useEnergyStore } from './energyStore';
 import { useInventoryStore } from './inventoryStore';
 import { useDailyOrderStore } from './dailyOrderStore';
+import { useAffectionStore } from './affectionStore';
+import { useTouchInteractionStore } from './touchInteractionStore';
+import { useVNReaderStore } from './vnReaderStore';
+import { globalBus } from '../core/EventBus';
+import { SaveService, CURRENT_VERSION } from '../services/SaveService';
+
+const ARCHIVE_THRESHOLD = 8;
 
 const SAVE_KEY_META = 'heartbeat_merge_meta';
 const SAVE_KEY_RUN = 'heartbeat_merge_run';
 const SAVE_KEY_LEGACY = 'heartbeat_merge_save';
-const CURRENT_VERSION = 4;
+
+const migrations: Record<number, (data: Record<string, unknown>) => Record<string, unknown>> = {
+    3: (data: Record<string, unknown>) => {
+        const dailyOrders = data.dailyOrders as Record<string, unknown> | undefined;
+        if (dailyOrders) {
+            if (dailyOrders.orders && !dailyOrders.activeOrders) {
+                dailyOrders.activeOrders = dailyOrders.orders;
+                delete dailyOrders.orders;
+            }
+            if (dailyOrders.completedCount === undefined) {
+                dailyOrders.completedCount = 0;
+            }
+        }
+        data.version = 4;
+        return data;
+    }
+};
+
+function migrateData(data: Record<string, unknown>, targetVersion: number): Record<string, unknown> {
+    let current = data;
+    let v = (current.version as number) || 0;
+    while (v < targetVersion && migrations[v]) {
+        current = migrations[v](current);
+        v = (current.version as number) || v + 1;
+    }
+    current.version = targetVersion;
+    return current;
+}
 
 export const useSaveStore = defineStore('save', () => {
     // --- State ---
     const hasSave = ref(false);
     const saveVersion = ref(CURRENT_VERSION);
     const lastSaveTimestamp = ref(0);
+    const saveDirty = ref(false);
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     // --- Computed ---
-    const saving = ref(false);
+    const savingMeta = ref(false);
+    const savingRun = ref(false);
+    const saving = computed(() => savingMeta.value || savingRun.value);
     const canSave = computed(() => !saving.value);
 
     // ============================================================
@@ -44,8 +82,8 @@ export const useSaveStore = defineStore('save', () => {
     // ============================================================
 
     function saveMeta(): void {
-        if (saving.value) return;
-        saving.value = true;
+        if (savingMeta.value) return;
+        savingMeta.value = true;
         try {
             const loopStore = useLoopStore();
             const heroineStore = useHeroineStore();
@@ -57,22 +95,23 @@ export const useSaveStore = defineStore('save', () => {
             const currencyStore = useCurrencyStore();
             const adStore = useAdStore();
             const dailyBuffStore = useDailyBuffStore();
+            const affectionStore = useAffectionStore();
+            const touchInteractionStore = useTouchInteractionStore();
 
-            const data = {
-                version: CURRENT_VERSION,
-                timestamp: Date.now(),
-                loop: loopStore.serialize(),
-                heroine: heroineStore.serialize(),
-                gacha: gachaStore.serialize(),
-                fragments: fragmentStore.serialize(),
-                cgAlbum: cgAlbumStore.serialize(),
-                collection: collectionStore.serialize(),
-                achievements: achievementStore.serialize(),
-                // Permanent currency — diamonds only (gold is run-scoped)
+            const data = SaveService.serializeMeta({
+                loop: loopStore,
+                heroine: heroineStore,
+                gacha: gachaStore,
+                fragments: fragmentStore,
+                cgAlbum: cgAlbumStore,
+                collection: collectionStore,
+                achievements: achievementStore,
                 diamonds: currencyStore.diamonds,
-                ad: adStore.serialize(),
-                dailyBuff: dailyBuffStore.serialize()
-            };
+                ad: adStore,
+                dailyBuff: dailyBuffStore,
+                affection: affectionStore,
+                touchData: touchInteractionStore,
+            });
 
             localStorage.setItem(SAVE_KEY_META, JSON.stringify(data));
         } catch (e) {
@@ -81,11 +120,11 @@ export const useSaveStore = defineStore('save', () => {
                 console.error('localStorage quota exceeded — meta save dropped');
             }
         } finally {
-            saving.value = false;
+            savingMeta.value = false;
         }
     }
 
-    function loadMeta(): any | null {
+    function loadMeta(): Record<string, unknown> | null {
         try {
             const raw = localStorage.getItem(SAVE_KEY_META);
             if (!raw) return null;
@@ -95,12 +134,13 @@ export const useSaveStore = defineStore('save', () => {
 
             return data;
         } catch (e) {
-            console.warn('Meta load failed:', e);
+            console.warn('Meta load failed, clearing corrupted data:', e);
+            localStorage.removeItem(SAVE_KEY_META);
             return null;
         }
     }
 
-    function applyMetaData(data: any): void {
+    function applyMetaData(data: Record<string, unknown>): void {
         if (!data) return;
 
         const loopStore = useLoopStore();
@@ -113,78 +153,45 @@ export const useSaveStore = defineStore('save', () => {
         const currencyStore = useCurrencyStore();
         const adStore = useAdStore();
         const dailyBuffStore = useDailyBuffStore();
+        const affectionStore = useAffectionStore();
+        const touchInteractionStore = useTouchInteractionStore();
 
-        // Loop
-        if (data.loop) {
-            loopStore.deserialize(data.loop);
-        }
+        const result = SaveService.resolveApplyMetaData(data, {
+            currentGold: currencyStore.gold,
+            getMemoryFragments: (cgId: string) => cgAlbumStore.getMemoryFragments(cgId),
+        });
 
-        // Heroine (permanent upgrades)
-        if (data.heroine) {
-            heroineStore.deserialize(data.heroine);
-        }
-
-        // Gacha
-        if (data.gacha) {
-            gachaStore.deserialize(data.gacha);
-        }
-
-        // Fragments (permanent — meta progression)
-        if (data.fragments) {
-            fragmentStore.deserialize(data.fragments);
-
-            // Migrate legacy memoryFragments from old saves into cgAlbum
-            if ((data.fragments as any).memoryFragments) {
-                const memFrags = (data.fragments as any).memoryFragments;
-                for (const cgId in memFrags) {
-                    const count = memFrags[cgId] || 0;
-                    if (count <= 0) continue;
-                    // Only migrate if cgAlbum has no data yet
-                    if (cgAlbumStore.getMemoryFragments(cgId) === 0) {
-                        cgAlbumStore.addMemoryFragments(cgId, count);
-                    }
-                }
-            }
-        }
-
-        // CG Album
-        if (data.cgAlbum) {
-            cgAlbumStore.deserialize(data.cgAlbum);
-        }
-
-        // Collection
-        if (data.collection) {
-            collectionStore.deserialize(data.collection);
-        }
-
-        // Achievements
-        if (data.achievements) {
-            achievementStore.deserialize(data.achievements);
-        }
-
-        // Diamonds (permanent currency)
-        if (data.diamonds !== undefined) {
-            currencyStore.deserialize({ gold: currencyStore.gold, diamonds: data.diamonds });
-        }
-
-        // Ad system daily counts
-        if (data.ad) {
-            adStore.deserialize(data.ad);
-        }
-
-        // Daily buff
-        if (data.dailyBuff) {
-            dailyBuffStore.deserialize(data.dailyBuff);
-        }
+        SaveService.applyMetaResult(result, {
+            loopStore, heroineStore, gachaStore, fragmentStore, cgAlbumStore,
+            collectionStore, achievementStore, currencyStore, adStore, dailyBuffStore,
+            affectionStore, touchInteractionStore,
+            energyStore: useEnergyStore(), boardStore: useBoardStore(),
+            bossStore: useBossStore(), inventoryStore: useInventoryStore(),
+            dailyOrderStore: useDailyOrderStore(), vnReaderStore: useVNReaderStore(),
+        });
     }
 
     // ============================================================
     // RUN SAVE — Current loop run state (reset each loop)
     // ============================================================
 
+    function compressOldSnapshots(): void {
+        const loopStore = useLoopStore();
+        const boardStore = useBoardStore();
+        const currentLoop = loopStore.loopIndex;
+
+        for (const [idx, snapshot] of boardStore.boardRegistry) {
+            if (currentLoop - idx > ARCHIVE_THRESHOLD) {
+                snapshot.cells = null;
+                snapshot.generatorStates = null;
+                snapshot.frozenDailyOrders = null;
+            }
+        }
+    }
+
     function saveRun(): void {
-        if (saving.value) return;
-        saving.value = true;
+        if (savingRun.value) return;
+        savingRun.value = true;
         try {
             const currencyStore = useCurrencyStore();
             const energyStore = useEnergyStore();
@@ -192,32 +199,35 @@ export const useSaveStore = defineStore('save', () => {
             const boardStore = useBoardStore();
             const inventoryStore = useInventoryStore();
             const dailyOrderStore = useDailyOrderStore();
+            const loopStore = useLoopStore();
+            const vnReaderStore = useVNReaderStore();
 
-            const data = {
-                version: CURRENT_VERSION,
-                timestamp: Date.now(),
-                currency: {
-                    gold: currencyStore.gold
-                },
-                energy: energyStore.serialize(),
-                boss: bossStore.serialize(),
-                board: boardStore.serialize(),
-                inventory: inventoryStore.serialize(),
-                dailyOrders: dailyOrderStore.serialize()
-            };
+            const data = SaveService.serializeRun({
+                gold: currencyStore.gold,
+                energy: energyStore,
+                boss: bossStore,
+                board: boardStore,
+                inventory: inventoryStore,
+                dailyOrders: dailyOrderStore,
+                boardRegistry: boardStore.boardRegistry,
+                activeBoardLoop: boardStore.activeBoardLoop,
+                loopStatus: loopStore.loopStatus,
+                vnReader: vnReaderStore,
+            });
 
             localStorage.setItem(SAVE_KEY_RUN, JSON.stringify(data));
+            compressOldSnapshots();
         } catch (e) {
             console.warn('Run save failed:', e);
             if (e instanceof DOMException && e.name === 'QuotaExceededError') {
                 console.error('localStorage quota exceeded — run save dropped');
             }
         } finally {
-            saving.value = false;
+            savingRun.value = false;
         }
     }
 
-    function loadRun(): any | null {
+    function loadRun(): Record<string, unknown> | null {
         try {
             const raw = localStorage.getItem(SAVE_KEY_RUN);
             if (!raw) return null;
@@ -227,12 +237,13 @@ export const useSaveStore = defineStore('save', () => {
 
             return data;
         } catch (e) {
-            console.warn('Run load failed:', e);
+            console.warn('Run load failed, clearing corrupted data:', e);
+            localStorage.removeItem(SAVE_KEY_RUN);
             return null;
         }
     }
 
-    function applyRunData(data: any): void {
+    function applyRunData(data: Record<string, unknown>): void {
         if (!data) return;
 
         const currencyStore = useCurrencyStore();
@@ -241,39 +252,22 @@ export const useSaveStore = defineStore('save', () => {
         const boardStore = useBoardStore();
         const inventoryStore = useInventoryStore();
         const dailyOrderStore = useDailyOrderStore();
+        const loopStore = useLoopStore();
+        const vnReaderStore = useVNReaderStore();
 
-        // Gold (run currency)
-        if (data.currency) {
-            currencyStore.deserialize({
-                gold: data.currency.gold ?? 0,
-                diamonds: currencyStore.diamonds // preserve diamonds from meta
-            });
-        }
+        const result = SaveService.resolveApplyRunData(data, {
+            currentDiamonds: currencyStore.diamonds,
+        });
 
-        // Energy
-        if (data.energy) {
-            energyStore.deserialize(data.energy);
-        }
-
-        // Board
-        if (data.board) {
-            boardStore.deserialize(data.board);
-        }
-
-        // Boss
-        if (data.boss) {
-            bossStore.deserialize(data.boss);
-        }
-
-        // Inventory
-        if (data.inventory) {
-            inventoryStore.deserialize(data.inventory);
-        }
-
-        // Daily orders
-        if (data.dailyOrders) {
-            dailyOrderStore.deserialize(data.dailyOrders);
-        }
+        SaveService.applyRunResult(result, {
+            loopStore, heroineStore: useHeroineStore(), gachaStore: useGachaStore(),
+            fragmentStore: useFragmentStore(), cgAlbumStore: useCGAlbumStore(),
+            collectionStore: useCollectionStore(), achievementStore: useAchievementStore(),
+            currencyStore, adStore: useAdStore(), dailyBuffStore: useDailyBuffStore(),
+            affectionStore: useAffectionStore(), touchInteractionStore: useTouchInteractionStore(),
+            energyStore, boardStore, bossStore, inventoryStore, dailyOrderStore, vnReaderStore,
+            showToast: (msg: string, type: string) => globalBus.emit('toast:show', { message: msg, type }),
+        });
     }
 
     // ============================================================
@@ -287,6 +281,18 @@ export const useSaveStore = defineStore('save', () => {
         lastSaveTimestamp.value = Date.now();
     }
 
+    function debouncedSave(delayMs: number = 200): void {
+        saveDirty.value = true;
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            if (saveDirty.value) {
+                saveAll();
+                saveDirty.value = false;
+            }
+            debounceTimer = null;
+        }, delayMs);
+    }
+
     // ============================================================
     // COMBINED LOAD ALL
     // ============================================================
@@ -297,28 +303,39 @@ export const useSaveStore = defineStore('save', () => {
 
         if (!metaData && !runData) return false;
 
-        if (metaData && metaData.version !== CURRENT_VERSION) {
-            clearAll();
-            return false;
-        }
-
-        // Apply meta first (permanent state)
-        if (metaData) {
+        if (metaData && (metaData.version as number) !== CURRENT_VERSION) {
+            if ((metaData.version as number) < CURRENT_VERSION) {
+                const migrated = migrateData(metaData, CURRENT_VERSION);
+                applyMetaData(migrated);
+                saveMeta();
+            } else {
+                clearAll();
+                return false;
+            }
+        } else if (metaData) {
             applyMetaData(metaData);
         }
 
-        // Then apply run state (current loop)
-        if (runData) {
+        if (runData && (runData.version as number) !== CURRENT_VERSION) {
+            if ((runData.version as number) < CURRENT_VERSION) {
+                const migrated = migrateData(runData, CURRENT_VERSION);
+                applyRunData(migrated);
+                saveRun();
+            } else {
+                console.warn(`Run save version ${runData.version as number} is newer than current ${CURRENT_VERSION}, clearing stale run data`);
+                clearRun();
+            }
+        } else if (runData) {
             applyRunData(runData);
         }
 
         hasSave.value = true;
         if (metaData) {
-            lastSaveTimestamp.value = metaData.timestamp || 0;
-            saveVersion.value = metaData.version || CURRENT_VERSION;
+            lastSaveTimestamp.value = (metaData.timestamp as number) || 0;
+            saveVersion.value = (metaData.version as number) || CURRENT_VERSION;
         } else if (runData) {
-            lastSaveTimestamp.value = runData.timestamp || 0;
-            saveVersion.value = runData.version || CURRENT_VERSION;
+            lastSaveTimestamp.value = (runData.timestamp as number) || 0;
+            saveVersion.value = (runData.version as number) || CURRENT_VERSION;
         }
 
         console.log('Game loaded from save.');
@@ -363,52 +380,54 @@ export const useSaveStore = defineStore('save', () => {
             const raw = localStorage.getItem(SAVE_KEY_LEGACY);
             if (!raw) return false;
 
-            const data = JSON.parse(raw);
+            const data: Record<string, unknown> = JSON.parse(raw);
             if (!data) return false;
 
-            // If it is legacy save (version < 4), convert to split meta/run saves
-            if (data.version === undefined || data.version < CURRENT_VERSION) {
+            // Legacy save data is untyped — use loose access for migration
+            const d = data as Record<string, any>; // TEMP: legacy migration, see TD-005
+
+            if (data.version === undefined || (data.version as number) < CURRENT_VERSION) {
                 const meta = {
                     version: CURRENT_VERSION,
-                    timestamp: data.timestamp || Date.now(),
+                    timestamp: d.timestamp || Date.now(),
                     loop: {
-                        loopIndex: data.loopIndex || 1,
-                        loopTokens: data.loopTokens || 0,
-                        metaUpgrades: data.metaUpgrades || {
+                        loopIndex: d.loopIndex || 1,
+                        loopTokens: d.loopTokens || 0,
+                        metaUpgrades: d.metaUpgrades || {
                             startingGold: 0,
                             startingDiamonds: 0,
                             startingEnergy: 0,
                             dailyBonus: 0
                         },
-                        currentLoopConfig: data.currentLoopConfig || null,
-                        unlockedNarrativeFlags: data.unlockedNarrativeFlags || []
+                        currentLoopConfig: d.currentLoopConfig || null,
+                        unlockedNarrativeFlags: d.unlockedNarrativeFlags || []
                     },
                     heroine: {
-                        upgrades: data.heroineUpgrades || {}
+                        upgrades: d.heroineUpgrades || {}
                     },
                     gacha: {
-                        ssrOwned: data.ssrOwned || {},
-                        pityCount: data.gachaPity || 0,
-                        freePullsLeft: data.freePullsLeft || 0,
-                        lastFreePullDate: data.lastFreePullDate || ''
+                        ssrOwned: d.ssrOwned || {},
+                        pityCount: d.gachaPity || 0,
+                        freePullsLeft: d.freePullsLeft || 0,
+                        lastFreePullDate: d.lastFreePullDate || ''
                     },
                     fragments: {
-                        fragments: data.fragments || {}
+                        fragments: d.fragments || {}
                     },
                     cgAlbum: {
-                        cgData: data.cgData || {},
-                        unlockedCGs: data.unlockedCGs || []
+                        cgData: d.cgData || {},
+                        unlockedCGs: d.unlockedCGs || []
                     },
                     collection: {
-                        discovered: data.discovered || [],
-                        gachaCollected: data.gachaCollected || [],
-                        completedChains: data.completedChains || [],
+                        discovered: d.discovered || [],
+                        gachaCollected: d.gachaCollected || [],
+                        completedChains: d.completedChains || [],
                         activeTab: 'items'
                     },
                     achievements: {
-                        unlocked: data.unlockedAchievements || [],
-                        completed: data.completedAchievements || [],
-                        stats: data.stats || {
+                        unlocked: d.unlockedAchievements || [],
+                        completed: d.completedAchievements || [],
+                        stats: d.stats || {
                             merges: 0,
                             bossDefeats: 0,
                             maxLevelItems: 0,
@@ -419,50 +438,51 @@ export const useSaveStore = defineStore('save', () => {
                             dailyCompleted: 0
                         }
                     },
-                    diamonds: data.diamonds || 0,
+                    diamonds: d.diamonds || 0,
                     ad: {
-                        adCounts: data.adCounts || {}
+                        adCounts: d.adCounts || {}
                     },
                     dailyBuff: {
-                        currentBuffId: data.currentBuffId || null,
-                        lastBuffRolledDate: data.lastBuffRolledDate || ''
+                        currentBuffId: d.currentBuffId || null,
+                        lastBuffRolledDate: d.lastBuffRolledDate || ''
                     }
                 };
 
                 const run = {
                     version: CURRENT_VERSION,
-                    timestamp: data.timestamp || Date.now(),
+                    timestamp: d.timestamp || Date.now(),
                     currency: {
-                        gold: data.gold || 0
+                        gold: d.gold || 0
                     },
                     energy: {
-                        current: data.energy ?? 100,
-                        max: data.maxEnergy ?? 100,
-                        lastRegenTime: data.lastRegenTime || Date.now()
+                        current: d.energy ?? 100,
+                        max: d.maxEnergy ?? 100,
+                        lastRegenTime: d.lastRegenTime || Date.now()
                     },
                     boss: {
-                        levelIdx: data.currentLevelIdx || 0,
-                        orderIdx: data.currentOrderIdx || 0,
-                        hp: data.bossHp ?? 0,
-                        totalHp: data.bossTotalHp ?? 0,
-                        state: data.bossState || 'BATTLE',
-                        timerRemaining: data.bossTimerRemaining || 0,
-                        bossName: data.bossName || '',
-                        bossAvatar: data.bossAvatar || ''
+                        levelIdx: d.currentLevelIdx || 0,
+                        orderIdx: d.currentOrderIdx || 0,
+                        hp: d.bossHp ?? 0,
+                        totalHp: d.bossTotalHp ?? 0,
+                        state: d.bossState || 'BATTLE',
+                        timerRemaining: d.bossTimerRemaining || 0,
+                        bossName: d.bossName || '',
+                        bossAvatar: d.bossAvatar || ''
                     },
                     board: {
-                        cells: data.cells || new Array(35).fill(null),
-                        locked: data.locked || [],
-                        generatorStates: data.generatorStates || {},
-                        cellsUnlocked: data.cellsUnlocked || 0
+                        cells: d.cells || new Array(35).fill(null),
+                        locked: d.locked || [],
+                        generatorStates: d.generatorStates || {},
+                        cellsUnlocked: d.cellsUnlocked || 0
                     },
                     inventory: {
-                        items: data.inventory || []
+                        items: d.inventory || []
                     },
                     dailyOrders: {
-                        orders: data.dailyOrders || [],
-                        loopIndex: data.loopIndex || 1,
-                        lastRollDate: data.lastRollDate || ''
+                        activeOrders: d.dailyOrders || [],
+                        loopIndex: d.loopIndex || 1,
+                        lastRollDate: d.lastRollDate || '',
+                        completedCount: d.dailyCompletedCount || 0
                     }
                 };
 
@@ -497,6 +517,7 @@ export const useSaveStore = defineStore('save', () => {
         saveAll,
         saveMeta,
         saveRun,
+        debouncedSave,
 
         // Actions — Load
         loadAll,

@@ -26,6 +26,10 @@ export interface GameItem {
   sellPrice: number;
   emoji: string;
   color: string;
+  energyRecover?: number;
+  type?: ItemType;
+  sellable?: boolean;
+  description?: string;
 }
 
 // Extended item data used by BoardLogic with optional type field
@@ -34,7 +38,7 @@ export interface BoardItemData extends GameItem {
   sellable?: boolean;
 }
 
-export type ItemType = 'GENERATOR' | 'JOKER' | 'SCISSOR' | 'NORMAL' | 'ENERGY_POTION';
+export type ItemType = 'GENERATOR' | 'JOKER' | 'SCISSOR' | 'NORMAL' | 'ENERGY_POTION' | 'SPECIAL' | 'SURPRISE_BOX';
 
 // ============================================================
 // Generator types  (assets/data/generators.json)
@@ -78,7 +82,7 @@ export interface GeneratorState {
 // ============================================================
 
 export interface StoryLine {
-  speaker: string | null;
+  speakerId: string | null;
   expression?: string;
   text: string;
 }
@@ -91,7 +95,7 @@ export interface StoryChapter {
 export interface CGStory {
   cgId: string;
   title: string;
-  maleLead: string;
+  maleLeadId: string;
   stories: StoryChapter[];
 }
 
@@ -123,6 +127,7 @@ export interface LevelOrder {
 
 export interface LevelData {
   id: number;
+  characterId: string;
   bossName: string;
   bossTitle: string;
   bossAvatar: string;
@@ -153,10 +158,15 @@ export interface GachaSubWeights {
 
 export interface GachaPoolItemValue {
   chain?: ChainId | 'random';
-  level: number | `random_${number}_${number}`;
+  level?: number | `random_${number}_${number}`;
   genChain?: string;
   cgId?: string | null;
   energy?: number;
+  amount?: number;
+  count?: number;
+  turns?: number;
+  genLevel?: number;
+  energyPerItem?: number;
 }
 
 export interface GachaPoolItem {
@@ -168,6 +178,8 @@ export interface GachaPoolItem {
   name: string;
   effect: string;
   value: GachaPoolItemValue;
+  itemId?: string;
+  description?: string;
 }
 
 export interface GachaPoolData {
@@ -183,6 +195,33 @@ export interface GachaPoolData {
   chainToGen: Record<ChainId, string>;
   chainItemPrefix: Record<ChainId, string>;
   gachaPoolV2: GachaPoolItem[];
+}
+
+// ============================================================
+// Loop status & board snapshot types
+// ============================================================
+
+export type LoopStatus = 'active' | 'settling' | 'completed'
+
+export interface BoardSnapshot {
+  loopIndex:       number
+  status:          LoopStatus
+  cells:           (string | null)[] | null
+  locked:          number[]
+  generatorStates: Record<string, GeneratorState> | null
+  cellsUnlocked:   number
+  frozenDailyOrders: DailyOrderState[] | null
+  rankTitle:       string
+  characterId:     string
+  completedAt?:    number
+}
+
+export interface MapNode {
+  loopIndex:    number
+  status:       LoopStatus
+  rankTitle:    string
+  characterId:  string
+  completedAt?: number
 }
 
 // ============================================================
@@ -240,8 +279,18 @@ export interface DailyOrder {
   name: string;
   required: OrderRequirement[];
   goldReward: number;
+  reward?: {
+    gold?: number;
+    diamonds?: number;
+    energy?: number;
+  };
   minLoop: number;
   dialogue: string;
+  npcAvatar?: string;
+}
+
+export interface DailyOrderState extends DailyOrder {
+  fulfilled: boolean;
 }
 
 export interface DailyOrderPoolData {
@@ -370,6 +419,41 @@ export interface UITextConfig {
   };
 }
 
+export interface UITimerConfig {
+  achievementToastDisplay: number;
+  achievementToastFadeOut: number;
+  unlockConfirmAutoClose: number;
+  unlockConfirmCloseDelay: number;
+  unlockAnimation: number;
+  bossDefeatAnim: number;
+  dialogueAutoAdvance: number;
+  orderTimerInterval: number;
+  energyRegenInterval: number;
+  particleLifespan: number;
+  paradeStepInterval: number;
+  gachaRevealDelay: number;
+  gachaCardFlipDuration: number;
+}
+
+export interface UIColorThemeConfig {
+  hpGradientHigh: string;
+  hpGradientMid: string;
+  hpGradientLow: string;
+  hpHighThreshold: number;
+  hpMidThreshold: number;
+  energyHighThreshold: number;
+  energyLowThreshold: number;
+  energyGradientHigh: string;
+  energyGradientMid: string;
+  energyGradientLow: string;
+}
+
+export interface UILayoutConfig {
+  unlockPopupMinOffset: number;
+  unlockParticleCount: number;
+  recycleParticleCount: number;
+}
+
 export interface SettingsData {
   GAME_CONFIG: GameSettingsConfig;
   RECYCLE_ENERGY_TABLE: Record<string, number>;
@@ -385,6 +469,9 @@ export interface SettingsData {
   UI_COLORS: UIColorsConfig;
   DIALOGUE_CONFIG: DialogueConfig;
   UI_TEXT: UITextConfig;
+  UI_TIMERS: UITimerConfig;
+  UI_COLOR_THEME: UIColorThemeConfig;
+  UI_LAYOUT: UILayoutConfig;
 }
 
 // ============================================================
@@ -409,14 +496,12 @@ export type ShopEffect =
 
 export interface ShopItem {
   id: string;
-  name: string;
   icon: string;
-  description: string;
   cost: number;
   effect: ShopEffect;
-  value: Record<string, any>;
-  i18nName?: string;
-  i18nDesc?: string;
+  value: Record<string, unknown>;
+  i18nName: string;
+  i18nDesc: string;
 }
 
 // ============================================================
@@ -429,8 +514,14 @@ export interface InventoryItem {
   icon: string;
   description: string;
   effect: string;
-  value: any;
+  value: unknown;
   rarity: string;
+}
+
+export interface InventoryItemMeta {
+  effect?: string;
+  value?: GachaPoolItemValue;
+  gachaId?: string;
 }
 
 // ============================================================
@@ -472,19 +563,42 @@ export interface MetaUpgrade {
 // Save data types  (saveStore.ts)
 // ============================================================
 
+import type {
+  LoopSerializeData,
+  HeroineSerializeData,
+  GachaSerializeData,
+  FragmentSerializeData,
+  CGAlbumSerializeData,
+  CollectionSerializeData,
+  AchievementSerializeData,
+  AdSerializeData,
+  DailyBuffSerializeData,
+  AffectionSerializeData,
+  TouchSerializeData,
+  CurrencySerializeData,
+  EnergySerializeData,
+  BossSerializeData,
+  BoardSerializedData,
+  InventorySerializeData,
+  DailyOrderSerializeData,
+  VNReaderSerializeData,
+} from './serialize';
+
 export interface MetaSaveData {
   version: number;
   timestamp: number;
-  loop: unknown;
-  heroine: unknown;
-  gacha: unknown;
-  fragments: unknown;
-  cgAlbum: unknown;
-  collection: unknown;
-  achievements: unknown;
+  loop: LoopSerializeData;
+  heroine: HeroineSerializeData;
+  gacha: GachaSerializeData;
+  fragments: FragmentSerializeData;
+  cgAlbum: CGAlbumSerializeData;
+  collection: CollectionSerializeData;
+  achievements: AchievementSerializeData;
   diamonds: number;
-  ad: unknown;
-  dailyBuff: unknown;
+  ad: AdSerializeData;
+  dailyBuff: DailyBuffSerializeData;
+  affection: AffectionSerializeData;
+  touchData: TouchSerializeData;
 }
 
 export interface RunSaveData {
@@ -493,11 +607,15 @@ export interface RunSaveData {
   currency: {
     gold: number;
   };
-  energy: unknown;
-  boss: unknown;
-  board: unknown;
-  inventory: unknown;
-  dailyOrders: unknown;
+  energy: EnergySerializeData;
+  boss: BossSerializeData;
+  board: BoardSerializedData;
+  inventory: InventorySerializeData;
+  dailyOrders: DailyOrderSerializeData;
+  boardRegistry: Array<[number, BoardSnapshot]>;
+  activeBoardLoop: number;
+  loopStatus: LoopStatus;
+  vnReader: VNReaderSerializeData;
 }
 
 // ============================================================
@@ -525,7 +643,7 @@ export interface FSMStateChangedEvent {
   from: string | null;
   to: string;
   event: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface GameEvents {
@@ -547,7 +665,14 @@ export interface GameEvents {
   'boss:orderFailed': { orderIdx: number; nextOrderIdx: number };
   'boss:orderLoaded': {
     orderIdx: number;
-    order: any;
+    order: {
+      required: Array<{ itemId: string; count: number }>;
+      damage: number;
+      isTimed?: boolean;
+      timeLimit?: number;
+      diamondReward?: number;
+      affectionReward?: number;
+    };
     isTimed: boolean;
     timeLimit: number;
   };
@@ -560,8 +685,11 @@ export interface GameEvents {
 
   // --- Board ---
   'board:cellsUnlocked': { indices: number[] };
-  'board:merged': { sourceIndex: number; targetIndex: number; result: any };
+  'board:merged': { sourceIndex: number; targetIndex: number; result: MergeResult };
   'board:produced': { generatorIndex: number; targetIndex: number; producedItemId: string };
+  'board:itemConsumed': { index: number; itemId: string };
+  'board:itemPlaced': { index: number; itemId: string };
+  'board:sold': { cellIndex: number; itemId: string; gold: number; energy: number };
 
   // --- Currency ---
   'currency:changed': { gold: number; diamonds: number };
@@ -623,31 +751,267 @@ export interface GameEvents {
   'gacha:newSSRsObtained': { items: GachaPoolItem[] };
 
   // --- Heroine ---
-  'heroine:upgradePurchased': { upgradeId: string; level: number; value: any };
-  'heroine:effectApplied': { upgradeId: string; level: number; value: any };
+  'heroine:upgradePurchased': { upgradeId: string; level: number; value: number };
+  'heroine:effectApplied': { upgradeId: string; level: number; value: number };
 
   // --- Inventory ---
-  'inventory:full': { availableSlots: number };
   'inventory:itemAdded': { itemId: string; count: number; total: number };
   'inventory:itemRemoved': { itemId: string; count: number; remaining: number };
   'inventory:itemUsed': { itemId: string; targetCellIndex: number | null };
   'inventory:cleared': void;
-  'inventory:expanded': { maxSlots: number; additionalSlots: number };
 
   // --- Loop ---
   'loop:completed': { loopIndex: number };
+  'loop:settling': { loopIndex: number };
   'loop:metaUpgradePurchased': { upgradeId: string; level: number; cost: number };
   'loop:narrativeFlagUnlocked': { flag: string };
   'loop:shouldComplete': void;
-  'loop:uiUpdated': { loopIndex: number; config: any };
+  'loop:uiUpdated': { loopIndex: number; config: LoopConfig };
+
+  // --- Board (multi-board) ---
+  'board:switched': { loopIndex: number; status: LoopStatus };
 
   // --- Shop ---
-  'shop:itemPurchased': { item: { id: string; cost: number; effect: string; value: any } };
+  'shop:itemPurchased': { item: { id: string; cost: number; effect: string; value: GachaPoolItemValue } };
 
   // --- VN Reader ---
   'vn:opened': { ssrId: string; storyIndex: number };
   'vn:closed': void;
 
+  // --- Affection ---
+  'affection:changed': { characterId: string; delta: number; source: string };
+  'affection:levelUp': { characterId: string; newLevel: number; oldLevel: number };
+  'affection:bossDefeated': { bossId: string; loopIndex: number };
+  'affection:vnCompleted': { cgId: string; maleLeadId: string };
+  'affection:giftGiven': { characterId: string; giftId: string; affectionGained: number };
+  'affection:touchPerformed': { characterId: string; zoneId: string; affectionGained: number };
+  'affection:coinsEarned': { amount: number; source: string };
+  'affection:shopPurchased': { itemId: string; coinsSpent: number };
+  'affection:shopEffect': { item: AffectionShopItem; effect: { type: string; value?: number; [key: string]: unknown } };
+
   // --- Locale ---
-  'localeChanged': { locale: string };
+  'locale:changed': { locale: string };
+
+  // --- Toast ---
+  'toast:show': { message: string; type: 'info' | 'error' | 'sr' | 'ssr' };
+}
+
+// ============================================================
+// Item effects config  (assets/data/item_effects.json)
+// ============================================================
+
+export interface LuckyCoinConfig {
+  defaultCount: number;
+  goldChance: number;
+  goldAmount: number;
+  diamondAmount: number;
+}
+
+export interface FragmentConfig {
+  defaultCount: number;
+  defaultGenLevel: number;
+}
+
+export interface EnergyItemConfig {
+  defaultRecover: number;
+}
+
+export interface DoubleGenConfig {
+  defaultTurns: number;
+}
+
+export interface ClearLevelConfig {
+  targetLevels: number[];
+  energyPerItem: number;
+}
+
+export interface RerollConfig {
+  defaultCount: number;
+}
+
+export interface ItemEffectsConfig {
+  luckyCoin: LuckyCoinConfig;
+  fragment: FragmentConfig;
+  energyItem: EnergyItemConfig;
+  doubleGen: DoubleGenConfig;
+  clearLv1: ClearLevelConfig;
+  spaceClean: ClearLevelConfig;
+  reroll: RerollConfig;
+  toolItems: Record<string, string>;
+}
+
+// ============================================================
+// Board economy config  (assets/data/board_economy.json)
+// ============================================================
+
+export interface BoardEconomyConfig {
+  sellPriceBoost: number;
+  luckyMergeChance: number;
+  dailyGoldBoost: number;
+  achievementTokenBonus: number;
+  energyDiscountFreeChance: number;
+  perfumeBoostChains: string[];
+}
+
+// ============================================================
+// Boss progression config  (assets/data/boss_progression.json)
+// ============================================================
+
+export interface BossProgressionTierEntry {
+  maxLoop: number | null;
+  boost: number;
+}
+
+export interface BossProgressionConfig {
+  orderTierBoost: BossProgressionTierEntry[];
+  maxItemTier: number;
+}
+
+// ============================================================
+// Gacha simple config  (assets/data/gacha_config.json)
+// ============================================================
+
+export interface GachaSimpleConfig {
+  tenPullCount: number;
+  freePullMaxRarity: Rarity;
+}
+
+// ============================================================
+// Affection config  (assets/data/affection_config.json)
+// ============================================================
+
+export interface AffectionLevelDef {
+  level: number;
+  name: string;
+  minPoints: number;
+  maxPoints: number;
+}
+
+export interface AffectionCharacterDef {
+  id: string;
+  name: string;
+  nameEn: string;
+  color: string;
+  avatar: string;
+  background: string;
+}
+
+export type AffectionSourceValue = number | Record<string, number>;
+
+export interface AffectionSourcesConfig {
+  [key: string]: AffectionSourceValue;
+}
+
+export interface AffectionConfig {
+  levels: AffectionLevelDef[];
+  characters: AffectionCharacterDef[];
+  bossToCharacter: Record<string, string>;
+  sources: AffectionSourcesConfig;
+  touchCooldown: number;
+  dailyTouchBonus: { threshold: number; bonus: number };
+  affectionCoins: {
+    earnRate: number;
+    levelUpBonuses: Record<string, number>;
+  };
+}
+
+// ============================================================
+// Character profiles  (assets/data/character_profiles.json)
+// ============================================================
+
+export interface SensorySignature {
+  smell: string;
+  touch: string;
+  sound: string;
+  taste: string;
+}
+
+export interface CharacterGifts {
+  loved: string[];
+  liked: string[];
+  normal: string[];
+}
+
+export interface CharacterProfile {
+  name: string;
+  nameEn: string;
+  color: string;
+  avatar: string;
+  background: string;
+  birthday: string;
+  title: string;
+  likes: string[];
+  dislikes: string[];
+  sensorySignature: SensorySignature;
+  gifts: CharacterGifts;
+}
+
+// ============================================================
+// Touch interactions config  (assets/data/touch_interactions.json)
+// ============================================================
+
+export interface TouchZone {
+  id: string;
+  name: string;
+  icon: string;
+  unlockLevel: number;
+}
+
+export interface TouchResponse {
+  affection: number;
+  dialogue?: string;
+  animation?: string;
+  zoneId: string;
+}
+
+export interface TouchInteractionsConfig {
+  zones: TouchZone[];
+  responses: Record<string, unknown>;
+}
+
+// ============================================================
+// Loop summary  (used by loopStore.calculateLoopRewards)
+// ============================================================
+
+export interface LoopSummary {
+  newDiscoveries: number;
+  achievementsUnlocked: number;
+}
+
+// ============================================================
+// Affection shop config  (assets/data/affection_shop.json)
+// ============================================================
+
+export interface AffectionShopCategory {
+  id: string;
+  name: string;
+  icon: string;
+}
+
+export interface AffectionShopItem {
+  id: string;
+  categoryId: string;
+  name: string;
+  icon: string;
+  price: number;
+  unlockLevel: number;
+  dailyLimit: number | null;
+  characterId: string | null;
+  effect: Record<string, unknown>;
+  thankDialogue?: string;
+  giftPreference?: string;
+}
+
+export interface AffectionShopConfig {
+  categories: AffectionShopCategory[];
+  items: AffectionShopItem[];
+}
+
+// ============================================================
+// Daily order config  (settings.json → DAILY_ORDER_CONFIG)
+// ============================================================
+
+export interface DailyOrderConfig {
+  MAX_ACTIVE: number;
+  REFRESH_COST: number;
 }

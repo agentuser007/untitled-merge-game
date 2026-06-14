@@ -1,0 +1,32 @@
+{
+  "luckyCoin": {
+    "defaultCount": 7,
+    "goldChance": 0.5,
+    "goldAmount": 100,
+    "diamondAmount": 10
+  },
+  "fragment": {
+    "defaultCount": 10,
+    "defaultGenLevel": 3
+  },
+  "energyItem": {
+    "defaultRecover": 20
+  },
+  "doubleGen": {
+    "defaultTurns": 3
+  },
+  "clearLv1": {
+    "targetLevels": [1],
+    "energyPerItem": 2
+  },
+  "spaceClean": {
+    "targetLevels": [1, 2],
+    "energyPerItem": 3
+  },
+  "reroll": {
+    "defaultCount": 3
+  },
+  "toolItems": {
+    "scissor": "scissor"
+  }
+}

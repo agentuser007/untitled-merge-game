@@ -96,10 +96,11 @@ export const useFragmentStore = defineStore('fragment', () => {
         };
     }
 
-    function deserialize(data: any) {
+    function deserialize(data: unknown) {
         if (!data) return;
+        const d = data as { fragments?: Record<string, number> };
         
-        fragments.value = data.fragments || {};
+        fragments.value = d.fragments || {};
     }
 
     return {

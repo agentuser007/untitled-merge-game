@@ -39,14 +39,8 @@ export const useAchievementStore = defineStore('achievement', () => {
         dailyCompleted: 0
     });
     
-    const achievementList = ref<Achievement[]>([]);
-
-    // NOTE: useConfigStore() is called at the top level of this defineStore setup.
-    // This creates an init order dependency — Pinia must be installed before this store is first accessed.
-    // In practice this is safe because stores are first accessed after app.mount(), but restructuring
-    // to use a lazy getter would remove this dependency if needed.
     const configStore = useConfigStore();
-    achievementList.value = configStore.achievementData;
+    const achievementList = computed<Achievement[]>(() => configStore.achievementData as Achievement[]);
 
     // --- Computed ---
     const unlockedCount = computed(() => unlocked.value.size);
@@ -163,13 +157,14 @@ export const useAchievementStore = defineStore('achievement', () => {
         };
     }
 
-    function deserialize(data: any) {
+    function deserialize(data: unknown) {
         if (!data) return;
+        const d = data as { unlocked?: string[]; unlockedThisLoop?: string[]; completed?: string[]; stats?: Record<string, number> };
         
-        unlocked.value = new Set(data.unlocked || []);
-        unlockedThisLoop.value = new Set(data.unlockedThisLoop || []);
-        completed.value = new Set(data.completed || []);
-        stats.value = data.stats || {
+        unlocked.value = new Set(d.unlocked || []);
+        unlockedThisLoop.value = new Set(d.unlockedThisLoop || []);
+        completed.value = new Set(d.completed || []);
+        stats.value = d.stats || {
             merges: 0,
             bossDefeats: 0,
             maxLevelItems: 0,

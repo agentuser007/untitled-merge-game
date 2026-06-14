@@ -33,7 +33,7 @@ export interface StateMachineConfig {
         };
     };
     actions?: {
-        [action: string]: (data?: any) => void;
+        [action: string]: (data?: unknown) => void;
     };
 }
 
@@ -74,7 +74,7 @@ export class StateMachine {
      * @param data - Optional payload passed to action callbacks
      * @returns true if transition succeeded, false if invalid
      */
-    send(event: string, data?: any): boolean {
+    send(event: string, data?: unknown): boolean {
         const stateConfig = this.states[this.current];
         if (!stateConfig || !stateConfig.on || !stateConfig.on[event]) {
             console.warn(

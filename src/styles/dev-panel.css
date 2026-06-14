@@ -301,3 +301,103 @@
   font-style: italic;
   text-align: center;
 }
+
+/* --- Toggle Switch Row --- */
+.dev-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dev-toggle-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #ccc;
+}
+
+/* --- Toggle Switch (iOS-style) --- */
+.dev-toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 11px;
+  outline: none;
+  cursor: pointer;
+  transition: background 0.25s;
+  flex-shrink: 0;
+}
+.dev-toggle-switch::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #888;
+  transition: transform 0.25s, background 0.25s;
+}
+.dev-toggle-switch:checked {
+  background: rgba(74, 144, 217, 0.5);
+}
+.dev-toggle-switch:checked::before {
+  transform: translateX(18px);
+  background: #4A90D9;
+}
+
+/* --- Info Row --- */
+.dev-info-row {
+  padding: 6px 10px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #888;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* --- Speed Row --- */
+.dev-speed-row {
+  display: flex;
+  gap: 6px;
+  padding: 6px 10px;
+}
+.dev-speed-btn {
+  flex: 1;
+  padding: 6px 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  color: #aaa;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.dev-speed-btn:hover {
+  background: rgba(74, 144, 217, 0.15);
+  color: #ddd;
+}
+.dev-speed-btn.dev-active {
+  background: rgba(74, 144, 217, 0.25);
+  border-color: rgba(74, 144, 217, 0.4);
+  color: #4A90D9;
+}
+
+/* --- Danger Button Variant --- */
+.dev-action-btn.dev-danger-btn {
+  background: rgba(255, 60, 60, 0.08);
+  border-color: rgba(255, 60, 60, 0.2);
+  color: #ff8888;
+}
+.dev-action-btn.dev-danger-btn:hover {
+  background: rgba(255, 60, 60, 0.18);
+  border-color: rgba(255, 60, 60, 0.35);
+  color: #ff6666;
+}

@@ -1,0 +1,30 @@
+{
+  "morven": {
+    "name": "Morven",
+    "nameEn": "Morven",
+    "title": "Ice Prince Scholar",
+    "likes": ["Coffee", "Quiet", "Rooftop", "Old Books"],
+    "dislikes": ["Noise", "Meaningless Socializing", "Sweets"]
+  },
+  "daniel": {
+    "name": "Daniel",
+    "nameEn": "Daniel",
+    "title": "Sunshine Senior",
+    "likes": ["Sports", "Music", "Guitar", "Juice"],
+    "dislikes": ["Boredom", "Being Restricted", "Too Much Quiet"]
+  },
+  "vincent": {
+    "name": "Vincent",
+    "nameEn": "Vincent",
+    "title": "Iron Vice President",
+    "likes": ["Order", "Black Tea", "Fountain Pens", "Organized Files"],
+    "dislikes": ["Chaos", "Tardiness", "Rule Breaking"]
+  },
+  "leo": {
+    "name": "Leo",
+    "nameEn": "Leo",
+    "title": "Tsundere Sharp Tongue",
+    "likes": ["Games", "Spicy Snacks", "Cola", "Anime"],
+    "dislikes": ["Early Mornings", "Being Bossed Around", "Boring Classes"]
+  }
+}

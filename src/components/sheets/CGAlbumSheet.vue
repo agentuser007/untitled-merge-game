@@ -230,14 +230,14 @@ function readCG(cg: CGDisplayItem) {
 
 .cg-reader-lead {
   font-size: 13px;
-  color: var(--accent-pink, #e91e8c);
+  color: var(--accent-pink, #F35683);
   font-weight: 600;
 }
 
 .cg-reader-story-title {
   font-size: 16px;
   font-weight: 700;
-  color: var(--accent-pink, #e91e8c);
+  color: var(--accent-pink, #F35683);
   margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid #f0e0ec;
@@ -284,7 +284,7 @@ function readCG(cg: CGDisplayItem) {
 
 .cg-btn-prev,
 .cg-btn-next {
-  background: linear-gradient(135deg, var(--accent-pink, #e91e8c), #c44569);
+  background: linear-gradient(135deg, var(--accent-pink, #F35683), #c44569);
   color: var(--text-inverse);
 }
 </style>

@@ -6,6 +6,11 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { globalBus } from '../core/EventBus';
 import { CurrencyLogic } from '../logic/CurrencyLogic';
+import { devConfig } from '../core/DevConfig';
+
+function emitEvents(events: { type: string; payload?: unknown }[]): void {
+    globalBus.emitLogicEvents(events);
+}
 
 export const useCurrencyStore = defineStore('currency', () => {
     // --- State ---
@@ -19,58 +24,51 @@ export const useCurrencyStore = defineStore('currency', () => {
     gold.value = logic.gold;
     diamonds.value = logic.diamonds;
 
-    // --- Subscribe to logic events ---
-    // HMR LIMITATION: globalBus.on() listeners registered here will stack on HMR updates.
-    // EventBus.on() returns the handler ref (not an unsubscribe fn), so per-listener HMR cleanup
-    // would require storing each handler ref and calling globalBus.off() with it on dispose.
-    // For now, this is a known dev-only issue — full page reload clears it.
-    globalBus.on('currency:changed', (data) => {
-        if (data) {
-            gold.value = data.gold;
-            diamonds.value = data.diamonds;
-        }
-    });
-
-    globalBus.on('currency:flash', (_data) => {
-        // This event is for UI effects, no state changes needed
-    });
-
     // --- Computed ---
     const totalBalance = computed(() => gold.value + diamonds.value);
 
     // --- Actions ---
     function addGold(amount: number): void {
-        logic.addGold(amount);
+        const events = logic.addGold(amount);
         gold.value = logic.gold;
+        emitEvents(events);
     }
 
     function setGold(value: number): void {
-        logic.setGold(value);
+        const events = logic.setGold(value);
         gold.value = logic.gold;
+        emitEvents(events);
     }
 
     function spendGold(amount: number): boolean {
-        const result = logic.spendGold(amount);
+        if (devConfig.enabled && devConfig.unlimitedGold) return true;
+        const { success, events } = logic.spendGold(amount);
         gold.value = logic.gold;
-        return result;
+        emitEvents(events);
+        return success;
     }
 
     function canAffordGold(amount: number): boolean {
+        if (devConfig.enabled && devConfig.unlimitedGold) return true;
         return logic.canAffordGold(amount);
     }
 
     function addDiamonds(amount: number): void {
-        logic.addDiamonds(amount);
+        const events = logic.addDiamonds(amount);
         diamonds.value = logic.diamonds;
+        emitEvents(events);
     }
 
     function spendDiamonds(amount: number): boolean {
-        const result = logic.spendDiamonds(amount);
+        if (devConfig.enabled && devConfig.unlimitedDiamonds) return true;
+        const { success, events } = logic.spendDiamonds(amount);
         diamonds.value = logic.diamonds;
-        return result;
+        emitEvents(events);
+        return success;
     }
 
     function canAffordDiamonds(amount: number): boolean {
+        if (devConfig.enabled && devConfig.unlimitedDiamonds) return true;
         return logic.canAffordDiamonds(amount);
     }
 
@@ -92,11 +90,12 @@ export const useCurrencyStore = defineStore('currency', () => {
         };
     }
 
-    function deserialize(data: any) {
+    function deserialize(data: unknown) {
         if (!data) return;
+        const d = data as { gold?: number; diamonds?: number };
         
-        logic.gold = data.gold ?? logic.gold;
-        logic.diamonds = data.diamonds ?? logic.diamonds;
+        logic.gold = d.gold ?? logic.gold;
+        logic.diamonds = d.diamonds ?? logic.diamonds;
         
         gold.value = logic.gold;
         diamonds.value = logic.diamonds;

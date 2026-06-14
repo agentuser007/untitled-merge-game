@@ -6,12 +6,13 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { globalBus } from '../core/EventBus';
 import { useConfigStore } from './configStore';
+import type { StoryChapter } from '@/types/game';
 
 export interface CGData {
     unlocked: number[];          // Array of unlocked story indices
     memoryFragments: number;     // Count of memory fragments
     title: string;               // Title of the CG story
-    maleLead: string;            // Male lead character name
+    maleLeadId: string;
     ssrId: string;               // Associated SSR card ID
 }
 
@@ -47,7 +48,7 @@ export const useCGAlbumStore = defineStore('cgAlbum', () => {
                 unlocked: [],
                 memoryFragments: 0,
                 title: '',
-                maleLead: '',
+                maleLeadId: '',
                 ssrId: ''
             };
         }
@@ -102,7 +103,7 @@ export const useCGAlbumStore = defineStore('cgAlbum', () => {
                 unlocked: [],
                 memoryFragments: 0,
                 title: '',
-                maleLead: '',
+                maleLeadId: '',
                 ssrId: ''
             };
         }
@@ -163,6 +164,46 @@ export const useCGAlbumStore = defineStore('cgAlbum', () => {
         return [...cgData.value[cgId].unlocked];
     }
 
+    function getStoriesForCG(cgId: string): Array<{ index: number; title: string; unlocked: boolean }> {
+        const cg = cgData.value[cgId];
+        if (!cg) return [];
+        const configStore = useConfigStore();
+        const storyConfig = configStore.cgStories[cgId];
+        if (!storyConfig?.stories) return [];
+        return storyConfig.stories.map((s: StoryChapter, i: number) => ({
+            index: i,
+            title: s.title || `${i + 1}`,
+            unlocked: cg.unlocked.includes(i)
+        }));
+    }
+
+    function canUnlockNext(cgId: string): boolean {
+        const cg = cgData.value[cgId];
+        if (!cg) return false;
+        const configStore = useConfigStore();
+        const storyConfig = configStore.cgStories[cgId];
+        if (!storyConfig?.stories) return false;
+        const nextIndex = cg.unlocked.length;
+        if (nextIndex >= storyConfig.stories.length) return false;
+        return cg.memoryFragments >= configStore.fragmentToStory;
+    }
+
+    function getNextUnlockInfo(cgId: string): { nextIndex: number; nextTitle: string; cost: number; currentFragments: number } | null {
+        const cg = cgData.value[cgId];
+        if (!cg) return null;
+        const configStore = useConfigStore();
+        const storyConfig = configStore.cgStories[cgId];
+        if (!storyConfig?.stories) return null;
+        const nextIndex = cg.unlocked.length;
+        if (nextIndex >= storyConfig.stories.length) return null;
+        return {
+            nextIndex,
+            nextTitle: storyConfig.stories[nextIndex].title || `${nextIndex + 1}`,
+            cost: configStore.fragmentToStory,
+            currentFragments: cg.memoryFragments
+        };
+    }
+
     function getMemoryFragments(cgId: string): number {
         if (!cgData.value[cgId]) {
             return 0;
@@ -179,11 +220,12 @@ export const useCGAlbumStore = defineStore('cgAlbum', () => {
         };
     }
 
-    function deserialize(data: any) {
+    function deserialize(data: unknown) {
         if (!data) return;
+        const d = data as { cgData?: Record<string, CGData>; unlockedCGs?: string[] };
         
-        cgData.value = data.cgData || {};
-        unlockedCGs.value = new Set(data.unlockedCGs || []);
+        cgData.value = d.cgData || {};
+        unlockedCGs.value = new Set(d.unlockedCGs || []);
     }
 
     return {
@@ -205,6 +247,9 @@ export const useCGAlbumStore = defineStore('cgAlbum', () => {
         tryUnlockNext,
         isStoryUnlocked,
         getUnlockedStories,
+        getStoriesForCG,
+        canUnlockNext,
+        getNextUnlockInfo,
         getMemoryFragments,
         
         // Serialization

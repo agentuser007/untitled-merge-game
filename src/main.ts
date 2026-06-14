@@ -18,7 +18,7 @@ import './styles/fonts.css'
 import './styles/dev-panel.css'
 
 const appEl = document.getElementById('app')
-if (appEl && !(appEl as any).__vue_app__) {
+if (appEl && !(appEl as any).__vue_app__) { // SAFE-CAST: Vue内部属性，仅启动检查用
     const app = createApp(App)
     const pinia = createPinia()
 
@@ -98,18 +98,8 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('dragstart', (e) => e.preventDefault());
 
 // ============================================================
-// DEV MODE (conditionally loaded, from index.html lines 697-712)
+// DEV MODE — Initialize reactive dev config
 // ============================================================
 
-if (
-    typeof window !== 'undefined' &&
-    (new URLSearchParams(window.location.search).has('dev') ||
-        localStorage.getItem('dev_mode') === '1')
-) {
-    (window as any).__DEV__ = true;
-
-    // Dev panel module was removed during Vue 3 migration.
-    // If a dev-panel is re-added in the future, use:
-    //   import('./dev-panel').catch(() => console.warn('[DevMode] Dev panel not available'));
-    console.warn('[DevMode] Dev panel module not available');
-}
+import { initDevMode } from './core/DevConfig';
+initDevMode();

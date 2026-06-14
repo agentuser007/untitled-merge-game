@@ -4,6 +4,7 @@
       <div id="quest-carousel">
         <!-- Floating Backpack Button -->
         <div class="floating-backpack-container">
+          <div class="warehouse-tag">仓库</div>
           <button id="floating-backpack-btn" @click="openInventory">
             <span class="backpack-emoji">🍩</span>
             <span class="backpack-badge" v-if="inventoryCount > 0">{{ inventoryCount }}</span>
@@ -53,7 +54,7 @@ const openInventory = () => {
   border-radius: 0;
   box-shadow: none;
   overflow: visible;
-  z-index: 55;
+  z-index: var(--z-fixed);
   box-sizing: border-box;
 }
 
@@ -107,28 +108,54 @@ const openInventory = () => {
 .floating-backpack-container {
   position: relative;
   align-self: flex-end;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2cqw;
+  margin-left: 2cqw;
+  z-index: 65;
+}
+
+.warehouse-tag {
+  background: var(--surface-muted);
+  border-radius: 2px;
+  color: var(--text-heading);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  text-align: center;
+  font-family: 'Jiangcheng Yuanti', sans-serif;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  line-height: 1.2;
+  white-space: nowrap;
+  margin-bottom: 4px;
 }
 
 #floating-backpack-btn {
-  background: #FFDFC8;
-  border: 4px solid var(--peach-light);
+  background: var(--cream);
+  border: 2px solid var(--pale-peach);
   border-radius: 10px;
   width: 52px;
   height: 52px;
   font-size: 20px;
   cursor: pointer;
-  box-shadow: 0px 1px 3.7px #60190F;
+  box-shadow: 0px 3px 6px rgba(0,0,0,0.15);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
-  padding: 6px 8px 4px;
-  gap: 2px;
-  transition: transform 0.1s ease;
+  transition: transform 0.15s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.15s ease, box-shadow 0.15s ease;
   position: relative;
+  padding: 0;
 }
 #floating-backpack-btn:active {
   transform: scale(0.95);
+}
+#floating-backpack-btn.drop-target,
+.floating-backpack-container.drop-target #floating-backpack-btn {
+  transform: scale(1.18);
+  border-color: #ff6b9d;
+  box-shadow: 0 0 16px rgba(255, 107, 157, 0.75);
+  background: var(--off-white);
 }
 
 .backpack-emoji {
@@ -138,17 +165,17 @@ const openInventory = () => {
 
 .backpack-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  background: #F35683;
-  color: #fff;
+  top: -5px;
+  right: -5px;
+  background: var(--accent-pink);
+  color: var(--text-primary);
   font-size: 9px;
   font-weight: 900;
-  min-width: 16px;
-  height: 16px;
+  min-width: 18px;
+  height: 18px;
   padding: 0 4px;
-  border-radius: 99px;
-  border: 1.5px solid #fff;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-primary);
   box-shadow: 0 2px 4px rgba(243, 86, 131, 0.3);
   display: flex;
   align-items: center;
@@ -158,61 +185,9 @@ const openInventory = () => {
   box-sizing: border-box;
 }
 
-.warehouse-tag {
-  background: #D9D9D9;
-  border-radius: 2px;
-  color: #000;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 2px 8px;
-  text-align: center;
-  font-family: 'Jiangcheng Yuanti', sans-serif;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-  line-height: 1.2;
-  white-space: nowrap;
-  position: absolute;
-  bottom: -24px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.chain-tooltip {
-  position: absolute;
-  z-index: 300;
-  pointer-events: auto;
-  transform: translateX(-50%);
-  background: rgb(255, 255, 255);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 14px;
-  padding: 10px 12px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: nowrap;
-  animation: chain-tooltip-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  white-space: nowrap;
-  max-width: 90vw;
-  overflow-x: auto;
-}
-
-.damage-popup {
-  position: fixed;
-  z-index: 650;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.62);
-  border-radius: 6px;
-  padding: 6px 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  animation: damage-popup-anim 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-
 @media (max-height: 760px) {
   #boss-header { padding: 4px 10px; gap: 8px; }
   #quest-carousel { padding: 4px 8px; gap: 6px; max-height: 95px; }
 }
 </style>
+

@@ -2,7 +2,7 @@
 // BoardLogic.ts — Pure Board Business Logic
 // ============================================================
 
-import { globalBus } from '../core/EventBus';
+export type LogicEvent = { type: string; payload?: unknown };
 
 // Define interfaces for our data structures
 export interface ItemData {
@@ -18,23 +18,23 @@ export interface ItemData {
   sellable?: boolean; // For generators that can't be sold
 }
 
+export interface GeneratorLevelConfig {
+  drop_pool: Array<{ itemId: string; weight: number }>;
+  free_production_chance: number;
+  capacity: number;
+  cooldown: number;
+  special_drop: {
+    chance: number;
+    items: Array<{ itemId: string; weight: number }>;
+  } | null;
+}
+
 export interface GeneratorConfig {
   id: string;
   name: string;
   emoji: string;
   chains: string[];
-  levels: {
-    [level: string]: {
-      drop_pool: Array<{ itemId: string; weight: number }>;
-      free_production_chance: number;
-      capacity: number;
-      cooldown: number;
-      special_drop: {
-        chance: number;
-        items: Array<{ itemId: string; weight: number }>;
-      } | null;
-    };
-  };
+  levels: Record<string, GeneratorLevelConfig>;
 }
 
 export interface GeneratorState {
@@ -43,12 +43,20 @@ export interface GeneratorState {
   maxClicks: number;
 }
 
+export interface BoardLogicState {
+  cells: (string | null)[];
+  locked: number[];
+  cellsUnlocked: number;
+  generatorStates: Record<number, GeneratorState>;
+}
+
 export interface ScissorResult {
   success: boolean;
   reason?: string;
   resultItems?: string[];
   targetIdx?: number;
   emptyIdx?: number;
+  secondItemToInventory?: string;
 }
 
 export interface MergeResult {
@@ -61,6 +69,10 @@ export interface MergeResult {
 
 export interface UnlockResult {
   indices: number[];
+}
+
+export interface RandomDeps {
+  random: () => number;
 }
 
 export class BoardLogic {
@@ -173,7 +185,7 @@ export class BoardLogic {
       t.type === 'GENERATOR' &&
       s.chain === t.chain &&
       s.level === t.level &&
-      s.level < 8
+      s.nextId !== null
     );
   }
 
@@ -183,6 +195,7 @@ export class BoardLogic {
     const s = this.cells[si],
       t = this.cells[ti];
     if (!s || !t) return false;
+    if (!items[s] || !items[t]) return false;
     if (this.isJoker(s, items) && !this.isSpecialItem(t, items) && items[t] && items[t].nextId)
       return true;
     if (this.isJoker(t, items) && !this.isSpecialItem(s, items) && items[s] && items[s].nextId)
@@ -200,6 +213,7 @@ export class BoardLogic {
     items: { [key: string]: ItemData },
     generators: Record<string, GeneratorConfig>
   ): MergeResult | 'move' | 'swap' | null {
+    if (si === ti) return null;
     if (this.locked.has(ti)) return null;
     const s = this.cells[si],
       t = this.cells[ti];
@@ -250,6 +264,7 @@ export class BoardLogic {
           this.cells[si] = null;
           this.cells[ti] = n;
           this.clearGeneratorState(si);
+          this.clearGeneratorState(ti);
           this.initGeneratorState(ti, n, items, generators);
           return { action: 'merge', nextId: n, srcIdx: si, tgtIdx: ti, isGenerator: true };
         }
@@ -282,11 +297,13 @@ export class BoardLogic {
       return { success: false, reason: 'invalid_type' };
     const prev = this.findPrevInChain(id, items);
     if (!prev) return { success: false, reason: 'no_prev' };
-    const ei = this.findEmptyCell();
-    if (ei === -1) return { success: false, reason: 'no_space' };
     this.cells[index] = prev;
-    this.cells[ei] = prev;
-    return { success: true, resultItems: [prev, prev], targetIdx: index, emptyIdx: ei };
+    const ei = this.findEmptyCell();
+    if (ei !== -1) {
+      this.cells[ei] = prev;
+      return { success: true, resultItems: [prev, prev], targetIdx: index, emptyIdx: ei };
+    }
+    return { success: true, resultItems: [prev], targetIdx: index, emptyIdx: -1, secondItemToInventory: prev };
   }
 
   findPrevInChain(itemId: string, items: { [key: string]: ItemData }): string | null {
@@ -299,7 +316,7 @@ export class BoardLogic {
     itemId: string,
     items: { [key: string]: ItemData },
     generators: { [key: string]: GeneratorConfig }
-  ): { genConfig: GeneratorConfig; levelConfig: any; level: number } | null {
+  ): { genConfig: GeneratorConfig; levelConfig: GeneratorLevelConfig; level: number } | null {
     const d = items[itemId];
     if (!d || d.type !== 'GENERATOR') return null;
     const genId = d.chain; // Assuming chain corresponds to generator ID
@@ -318,18 +335,18 @@ export class BoardLogic {
   rollGeneratorDrop(
     itemId: string,
     items: { [key: string]: ItemData },
-    generators: { [key: string]: GeneratorConfig }
+    generators: { [key: string]: GeneratorConfig },
+    deps: RandomDeps,
   ): string | null {
     const cfg = this.getGeneratorConfig(itemId, items, generators);
     if (!cfg) return null;
     const { levelConfig: lc } = cfg;
     const pool = lc.drop_pool;
 
-    // Special drop (Lv.8: 5% chance)
-    if (lc.special_drop && Math.random() < lc.special_drop.chance) {
+    if (lc.special_drop && deps.random() < lc.special_drop.chance) {
       const sp = lc.special_drop.items;
       const tw = sp.reduce((s: number, i: { itemId: string; weight: number }) => s + i.weight, 0);
-      let r = Math.random() * tw;
+      let r = deps.random() * tw;
       for (const i of sp) {
         r -= i.weight;
         if (r <= 0) return i.itemId;
@@ -338,7 +355,7 @@ export class BoardLogic {
     }
 
     const tw = pool.reduce((s: number, i: { itemId: string; weight: number }) => s + i.weight, 0);
-    let r = Math.random() * tw,
+    let r = deps.random() * tw,
       chosen = pool[0].itemId;
     for (const i of pool) {
       r -= i.weight;
@@ -353,13 +370,14 @@ export class BoardLogic {
   isFreeProduction(
     itemId: string,
     items: { [key: string]: ItemData },
-    generators: { [key: string]: GeneratorConfig }
+    generators: { [key: string]: GeneratorConfig },
+    deps: RandomDeps,
   ): boolean {
     const cfg = this.getGeneratorConfig(itemId, items, generators);
     if (!cfg) return false;
     return (
       cfg.levelConfig.free_production_chance > 0 &&
-      Math.random() < cfg.levelConfig.free_production_chance
+      deps.random() < cfg.levelConfig.free_production_chance
     );
   }
 
@@ -370,6 +388,7 @@ export class BoardLogic {
     if (!d) return false;
     if (d.type === 'GENERATOR' && d.sellable === false) return false;
     if (d.type === 'JOKER' || d.type === 'SCISSOR') return false;
+    if (d.type === 'ENERGY_POTION' || d.type === 'SPECIAL') return false;
     return true;
   }
 
@@ -382,14 +401,18 @@ export class BoardLogic {
   }
 
   // ---- Unlock ----
+  // NOTE: cellsUnlocked is a shared counter that tracks total unlocks from both
+  // boss defeats (free) and gold purchases. This means boss-defeat unlocks advance
+  // the cost index for subsequent gold purchases. This is intentional design —
+  // boss progression reduces the total gold needed for board expansion.
   getUnlockCost(cellUnlockCosts: number[]): number {
     return cellUnlockCosts[Math.min(this.cellsUnlocked, cellUnlockCosts.length - 1)];
   }
 
-  unlockCells(indices: number[]): void {
+  unlockCells(indices: number[]): LogicEvent[] {
     for (const i of indices) this.locked.delete(i);
     this.cellsUnlocked += indices.length;
-    globalBus.emit('board:cellsUnlocked', { indices });
+    return [{ type: 'board:cellsUnlocked', payload: { indices } }];
   }
 
   // ---- Generator state ----
@@ -556,7 +579,7 @@ export class BoardLogic {
     }
   }
 
-  serialize(): any {
+  serialize(): BoardLogicState {
     return {
       cells: [...this.cells],
       locked: [...this.locked],
@@ -565,7 +588,7 @@ export class BoardLogic {
     };
   }
 
-  deserialize(data: any, items?: { [key: string]: ItemData }, generators?: Record<string, GeneratorConfig>): void {
+  deserialize(data: BoardLogicState | null, items?: { [key: string]: ItemData }, generators?: Record<string, GeneratorConfig>): void {
     if (!data) return;
     this.cells = data.cells || new Array(this.cols * this.rows).fill(null);
     this.locked = new Set(data.locked || []);

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "shop_energy_small",
+    "icon": "⚡",
+    "cost": 50,
+    "effect": "add_energy_item",
+    "value": { "energy": 30 },
+    "i18nName": "shopEnergySmall",
+    "i18nDesc": "shopEnergySmallDesc"
+  },
+  {
+    "id": "shop_energy_large",
+    "icon": "🔋",
+    "cost": 120,
+    "effect": "add_energy_item",
+    "value": { "energy": 80 },
+    "i18nName": "shopEnergyLarge",
+    "i18nDesc": "shopEnergyLargeDesc"
+  },
+  {
+    "id": "shop_joker",
+    "icon": "🃏",
+    "cost": 200,
+    "effect": "add_joker",
+    "value": {},
+    "i18nName": "shopJoker",
+    "i18nDesc": "shopJokerDesc"
+  },
+  {
+    "id": "shop_scissor",
+    "icon": "✂️",
+    "cost": 150,
+    "effect": "add_scissor",
+    "value": { "itemId": "scissor" },
+    "i18nName": "shopScissor",
+    "i18nDesc": "shopScissorDesc"
+  },
+  {
+    "id": "shop_clear_lv1",
+    "icon": "🧹",
+    "cost": 80,
+    "effect": "clear_lv1",
+    "value": { "energyPerItem": 2 },
+    "i18nName": "shopClearLv1",
+    "i18nDesc": "shopClearLv1Desc"
+  }
+]

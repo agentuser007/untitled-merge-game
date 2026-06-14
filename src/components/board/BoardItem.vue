@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import { useConfigStore } from '../../stores/configStore';
 import { useBoardStore } from '../../stores/boardStore';
 // ItemData type is used via configStore.items — type inferred at usage
@@ -51,22 +51,46 @@ const itemClasses = computed(() => {
   return classes;
 });
 
+const now = ref(Date.now());
+let intervalId: number | null = null;
+
+const generatorState = computed(() => boardStore.generatorStates[props.cellIndex] || null);
+const cooldownUntil = computed(() => generatorState.value?.cooldownUntil || 0);
+
+watch(cooldownUntil, (newVal) => {
+  if (intervalId) {
+    window.clearInterval(intervalId);
+    intervalId = null;
+  }
+  if (newVal > Date.now()) {
+    now.value = Date.now();
+    intervalId = window.setInterval(() => {
+      now.value = Date.now();
+      if (now.value >= newVal) {
+        window.clearInterval(intervalId!);
+        intervalId = null;
+      }
+    }, 1000);
+  }
+}, { immediate: true });
+
+onUnmounted(() => {
+  if (intervalId) {
+    window.clearInterval(intervalId);
+  }
+});
+
 // Generator timer text
 const timerText = computed(() => {
   if (!itemData.value || itemData.value.type !== 'GENERATOR') {
     return '';
   }
   
-  const generatorState = boardStore.generatorStates[props.cellIndex];
-  if (!generatorState) {
+  if (cooldownUntil.value <= now.value) {
     return '';
   }
   
-  if (!generatorState.cooldownUntil || generatorState.cooldownUntil <= Date.now()) {
-    return '';
-  }
-  
-  const remaining = Math.max(0, Math.ceil((generatorState.cooldownUntil - Date.now()) / 1000));
+  const remaining = Math.max(0, Math.ceil((cooldownUntil.value - now.value) / 1000));
   return `${remaining}s`;
 });
 </script>

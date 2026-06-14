@@ -1,0 +1,22 @@
+{
+  "levels": [
+    { "level": 0, "name": "Stranger", "minPoints": 0, "maxPoints": 99 },
+    { "level": 1, "name": "Acquaintance", "minPoints": 100, "maxPoints": 299 },
+    { "level": 2, "name": "Friend", "minPoints": 300, "maxPoints": 599 },
+    { "level": 3, "name": "Flirtatious", "minPoints": 600, "maxPoints": 999 },
+    { "level": 4, "name": "Crush", "minPoints": 1000, "maxPoints": 1499 },
+    { "level": 5, "name": "Bonded", "minPoints": 1500, "maxPoints": 99999 }
+  ],
+  "characters": [
+    { "id": "morven", "name": "Morven", "nameEn": "Morven" },
+    { "id": "daniel", "name": "Daniel", "nameEn": "Daniel" },
+    { "id": "vincent", "name": "Vincent", "nameEn": "Vincent" },
+    { "id": "leo", "name": "Leo", "nameEn": "Leo" }
+  ],
+  "bossToCharacter": {
+    "0": "morven",
+    "1": "daniel",
+    "2": "vincent",
+    "3": "leo"
+  }
+}

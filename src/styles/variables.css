@@ -34,9 +34,9 @@
   --off-white: #FAF5F8;
   --deep-brown-text: #B28265;
 
-  /* --- Neumorphic shadows --- */
-  --shadow-neu-up: -5px -5px 10px rgba(255,255,255,0.6), 5px 5px 10px rgba(160,120,80,0.25);
-  --shadow-neu-down: 5px 5px 10px rgba(255,255,255,0.6), -5px -5px 10px rgba(160,120,80,0.25);
+  /* --- Neumorphic shadows (warm) --- */
+  --shadow-neu-up: -3px -3px 6px rgba(255,235,210,0.8), 3px 3px 6px rgba(160,120,80,0.25);
+  --shadow-neu-down: 3px 3px 6px rgba(255,235,210,0.8), -3px -3px 6px rgba(160,120,80,0.25);
 
   /* --- Accent colors --- */
   --accent-pink: #F35683;
@@ -46,9 +46,9 @@
   --color-danger: #D32F2F;
   --color-danger-bright: #FF1744;
   --color-reward: #F57F17;
-  --rarity-r: #4A90D9;
-  --rarity-sr: #9b59b6;
-  --rarity-ssr: #f1c40f;
+  --rarity-r: #7CB9E8;
+  --rarity-sr: #C89FD4;
+  --rarity-ssr: #F5C842;
   --daily-icon-start: #FFD54F;
   --daily-icon-end: #FFB300;
   --scissor-color: #9C27B0;
@@ -62,7 +62,7 @@
   --vn-pink-light: #FF8E9E;
 
   /* --- Semantic text colors --- */
-  --text-dark: #333;
+  --text-dark: #695E59;
   --text-medium: #555;
   --text-light: #999;
   --text-muted-alt: #666;
@@ -77,7 +77,7 @@
 
   /* --- Figma design tokens --- */
   --status-bar-bg: #F5F5FA;
-  --status-bar-pill-shadow: 5px 5px 10px rgba(170, 170, 204, 0.5), -5px -5px 10px #fff;
+  --status-bar-pill-shadow: -3px -3px 6px rgba(255,235,210,0.8), 3px 3px 6px rgba(160,120,80,0.25);
   --status-bar-pill-radius: 32px;
   --currency-pill-bg: #F5F5FA;
   --currency-text: #DDAA8B;
@@ -102,10 +102,25 @@
   --sell-btn-bg: #F35683;
   --sell-btn-border: #E9C3A8;
 
+  /* --- Achievement Sheet --- */
+  --ach-bg-panel: #ffdfc8;
+  --ach-card-active: #968173;
+  --ach-card-inactive: #e4d0c1;
+  --ach-btn-claim: #c99270;
+  --ach-shadow-red: 0px 1px 3.7px #60190f;
+  --ach-shadow-dark: 0px 3px 3.7px rgba(0,0,0,0.6);
+  --ach-progress-partial: #e0b75d;
+  --ach-connector: #e3cec0;
+  --ach-bottom-bg: #ffe1cc;
+  --ach-bottom-border: #ddaa8b;
+  --ach-trophy-blue: #70a7c9;
+  --ach-gift-gold: #e0b352;
+  --ach-text-dark: #695e59;
+
   /* --- Grid / Board --- */
   --board-max-width: 393px;
   --grid-gap: 1px;
-  --cell-radius: 6px;
+  --cell-radius: 4px;
   --cell-bg: #E9C3A8;
   --cell-bg-alt: #DDAA8B;
   --cell-border: #FFD3B4;
@@ -124,4 +139,77 @@
 
   /* --- Figma scale (container query) --- */
   --figma-scale: min(calc(100vw / 402), calc(100vh / 874));
+
+  /* ============================================================
+     v1.1 additions — Design System tokens
+     ============================================================ */
+
+  /* --- Semantic text (补充) --- */
+  --text-gold: #DDAA8B;
+
+  /* --- Status colors (补充) --- */
+  --pink-soft: #FFA1C9;
+  --purple-text: #E3DAFF;
+  --order-slot-bg: #433131;
+  --progress-partial: #E0B75D;
+  --locked-cell-overlay: rgba(0, 0, 0, 0.25);
+  --locked-cell-unlockable: rgba(180, 150, 120, 0.35);
+
+  /* --- Shadows (补充) --- */
+  --shadow-red: 0px 1px 3.7px #60190F;
+  --shadow-panel: 0 0 5.8px rgba(0, 0, 0, 0.7);
+  --shadow-overlay: 0px 3px 3.7px rgba(0, 0, 0, 0.6);
+  --shadow-popup: 0px 4px 5.1px rgba(0, 0, 0, 0.81);
+  --shadow-board-outer: 0px 4px 4px rgba(0, 0, 0, 0.41);
+  --shadow-status-pill: 0px 4px 4px rgba(0, 0, 0, 0.25);
+
+  /* --- Radius --- */
+  --radius-full: 32px;
+  --radius-panel: 12px;
+  --radius-card: 10px;
+  --radius-grid: 6px;
+  --radius-tag: 7px;
+  --radius-capsule: 13px;
+  --radius-badge: 5px;
+  --radius-popup: 6px;
+
+  /* --- Transitions (补充) --- */
+  --transition-slow: 300ms;
+  --transition-sheet-out: 220ms;
+
+  /* --- Z-Index --- */
+  --z-bg: 0;
+  --z-character: 10;
+  --z-board: 20;
+  --z-items: 30;
+  --z-hud: 40;
+  --z-fixed: 50;
+  --z-sheet: 100;
+  --z-toast: 200;
+  --z-modal: 300;
+
+  /* --- Responsive --- */
+  --cell-size: clamp(44px, calc((100cqw - 44px) / 7), 56px);
+  --font-title-lg: clamp(20px, 6cqw, 24px);
+  --font-title-md: clamp(12px, 3.5cqw, 14px);
+  --font-body: clamp(10px, 2.8cqw, 12px);
+  --font-label: clamp(8px, 2cqw, 10px);
+
+  /* --- Rarity glow (新增) --- */
+  --rarity-r-glow: 0 0 8px rgba(124, 185, 232, 0.6);
+  --rarity-sr-glow: 0 0 8px rgba(200, 159, 212, 0.6);
+  --rarity-ssr-glow: 0 0 12px rgba(245, 200, 66, 0.8);
+
+  /* --- Gacha --- */
+  --gacha-bg: #1A0E2E;
+  --gacha-card-flip: 0.6s;
+  --gacha-result-glow: 0 0 20px rgba(245, 200, 66, 0.9);
+
+  /* --- VN / CG (保留现有 vn-accent/vn-pink，仅新增) --- */
+  --vn-overlay-bg: rgba(0, 0, 0, 0.55);
+  --vn-text-box-bg: rgba(20, 10, 5, 0.75);
+  --vn-choice-bg: rgba(90, 60, 40, 0.8);
+  --vn-choice-hover: rgba(140, 100, 70, 0.9);
+  --cg-locked-overlay: rgba(0, 0, 0, 0.6);
+  --cg-locked-blur: 8px;
 }

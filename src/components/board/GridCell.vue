@@ -7,6 +7,7 @@
   >
     <BoardItem v-if="itemId && !locked" :item-id="itemId" :cell-index="index" />
     <div v-if="locked" class="cell-lock">🔒</div>
+    <img v-if="selected" :class="$style.vectorIcon" src="/assets/ui/select-frame.svg" alt="" />
   </div>
 </template>
 
@@ -48,9 +49,7 @@ const cellClasses = computed(() => {
     classes.push('locked');
   }
 
-  if (props.selected) {
-    classes.push('selected');
-  }
+
 
   if (props.animState) {
     classes.push(props.animState);
@@ -73,7 +72,7 @@ function onAnimationEnd() {
   min-width: 0;
   min-height: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--cell-radius);
   background: var(--cell-bg);
   display: flex;
   align-items: center;
@@ -89,18 +88,14 @@ function onAnimationEnd() {
   background: var(--cell-bg-alt);
 }
 
-.grid-cell.selected {
-  border: 2px solid var(--accent-pink) !important;
-}
-
 .grid-cell.cell-highlight {
   background: var(--cell-highlight) !important;
-  border-color: #5BC3D0 !important;
+  border-color: var(--cell-highlight) !important;
 }
 
 .grid-cell.order-match {
   background: var(--cell-highlight) !important;
-  border-color: #5BC3D0 !important;
+  border-color: var(--cell-highlight) !important;
 }
 
 .grid-cell .merge-badge {
@@ -156,14 +151,19 @@ function onAnimationEnd() {
   opacity: 0.6;
   filter: grayscale(0.5);
 }
-.grid-cell.locked:hover .cell-lock,
 .grid-cell.locked:active .cell-lock {
   opacity: 0.9;
   filter: grayscale(0);
 }
-.grid-cell.locked:hover {
-  border-color: var(--accent-pink);
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 8px rgba(243, 86, 131, 0.3);
+@media (hover: hover) {
+  .grid-cell.locked:hover .cell-lock {
+    opacity: 0.9;
+    filter: grayscale(0);
+  }
+  .grid-cell.locked:hover {
+    border-color: var(--accent-pink);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 8px rgba(243, 86, 131, 0.3);
+  }
 }
 
 .grid-cell.dragging {
@@ -187,5 +187,16 @@ function onAnimationEnd() {
 }
 .grid-cell.gen-produce {
   animation: gen-produce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+</style>
+
+<style module>
+.vectorIcon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
 }
 </style>

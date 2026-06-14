@@ -1,12 +1,13 @@
 // ============================================================
 // BossLogic.ts — Pure Boss Business Logic + State Machine
 // ============================================================
-// NO DOM references. Emits events via EventBus.
+// NO DOM references. Returns events arrays (no globalBus).
 // State Machine: IDLE → BATTLE → SUBMITTING → DEFEATED → COMPLETE
 // ============================================================
 
 import { StateMachine } from '../core/StateMachine';
-import { globalBus } from '../core/EventBus';
+import type { LogicEvent } from './BoardLogic';
+import type { OrderRequirement } from '@/types/game';
 
 // Define interfaces for our data structures
 export interface ItemData {
@@ -21,16 +22,13 @@ export interface ItemData {
   type?: string;
 }
 
-export interface OrderRequired {
-  itemId: string;
-  count: number;
-}
-
 export interface OrderData {
-  required: OrderRequired[];
+  required: OrderRequirement[];
   damage: number;
   isTimed?: boolean;
   timeLimit?: number;
+  diamondReward?: number;
+  affectionReward?: number;
 }
 
 export interface LevelData {
@@ -46,6 +44,16 @@ export interface LevelData {
 export interface LoopConfig {
   loopIndex: number;
   hpMultiplier: number;
+}
+
+export interface TierBoostEntry {
+  maxLoop: number | null;
+  boost: number;
+}
+
+export interface BossProgressionDeps {
+  orderTierBoost: TierBoostEntry[];
+  maxItemTier: number;
 }
 
 export interface BossLevelLoadedEvent {
@@ -84,6 +92,19 @@ export interface BossDefeatedEvent {
 export interface ApplyDamageResult {
   hpLeft: number;
   isDefeated: boolean;
+}
+
+export interface BoardLike {
+  findAllItems: (itemId: string) => number[];
+}
+
+export interface BossSnapshot {
+  levelIdx: number;
+  orderIdx: number;
+  hp: number;
+  totalHp: number;
+  state: string;
+  timerRemaining: number;
 }
 
 export class BossLogic {
@@ -130,12 +151,13 @@ export class BossLogic {
    * Get the tier boost for boss order items based on loop index.
    * Loop 1: +0; Loop 2-3: +1; Loop 4-5: +2; Loop 6-7: +3; Loop 8+: +4 (capped)
    */
-  getOrderTierBoost(loopIndex: number): number {
-    if (loopIndex <= 1) return 0;
-    if (loopIndex <= 3) return 1;
-    if (loopIndex <= 5) return 2;
-    if (loopIndex <= 7) return 3;
-    return 4; // Loop 8+ cap at +4
+  getOrderTierBoost(loopIndex: number, deps: BossProgressionDeps): number {
+    for (const entry of deps.orderTierBoost) {
+      if (entry.maxLoop === null || loopIndex <= entry.maxLoop) {
+        return entry.boost;
+      }
+    }
+    return 0;
   }
 
   /**
@@ -143,12 +165,12 @@ export class BossLogic {
    * Increases item tier (itemId suffix) by the boost amount, capped at MAX_TIER (8).
    * Only scales if the target item ID exists in the ITEMS registry.
    */
-  getScaledOrder(order: OrderData, items: { [key: string]: ItemData }): OrderData {
+  getScaledOrder(order: OrderData, items: { [key: string]: ItemData }, deps: BossProgressionDeps): OrderData {
     const loopIndex = this.loopConfig ? this.loopConfig.loopIndex : 1;
-    const boost = this.getOrderTierBoost(loopIndex);
-    if (boost === 0) return order; // No scaling needed
+    const boost = this.getOrderTierBoost(loopIndex, deps);
+    if (boost === 0) return order;
 
-    const MAX_TIER = 8;
+    const MAX_TIER = deps.maxItemTier;
     const scaledRequired = order.required.map(req => {
       // Parse itemId like "study_3" → prefix "study", tier 3
       const match = req.itemId.match(/^(.+)_(\d+)$/);
@@ -173,11 +195,10 @@ export class BossLogic {
   /**
    * Load a boss level. Returns level data or null if game complete.
    */
-  loadLevel(levelIdx: number, levels: LevelData[]): LevelData | null {
+  loadLevel(levelIdx: number, levels: LevelData[], deps: BossProgressionDeps): { level: LevelData | null; events: LogicEvent[] } {
     if (levelIdx >= levels.length) {
       this.fsm.send('GAME_OVER');
-      globalBus.emit('boss:gameComplete');
-      return null;
+      return { level: null, events: [{ type: 'boss:gameComplete' }] };
     }
     this.currentLevelIdx = levelIdx;
     this.currentOrderIdx = 0;
@@ -201,61 +222,75 @@ export class BossLogic {
       this.fsm.send('NEXT_LEVEL');
     }
 
-    globalBus.emit('boss:levelLoaded', {
-      levelIdx,
-      bossName: level.bossName,
-      bossTitle: level.bossTitle,
-      bossAvatar: level.bossAvatar,
-      bossColor: level.bossColor,
-      bgGradient: level.bgGradient,
-      currentHp: this.currentHp,
-      totalHp: this.totalHp
-    } as BossLevelLoadedEvent);
+    const events: LogicEvent[] = [{
+      type: 'boss:levelLoaded',
+      payload: {
+        levelIdx,
+        bossName: level.bossName,
+        bossTitle: level.bossTitle,
+        bossAvatar: level.bossAvatar,
+        bossColor: level.bossColor,
+        bgGradient: level.bgGradient,
+        currentHp: this.currentHp,
+        totalHp: this.totalHp
+      }
+    }];
 
-    this.loadOrder(0, levels);
-    return level;
+    const orderResult = this.loadOrder(0, levels, deps);
+    events.push(...orderResult.events);
+
+    return { level, events };
   }
 
   /**
    * Load an order within the current level.
    */
-  loadOrder(orderIdx: number, levels: LevelData[], items?: { [key: string]: ItemData }): OrderData | null {
+  loadOrder(orderIdx: number, levels: LevelData[], deps: BossProgressionDeps, items?: { [key: string]: ItemData }): { order: OrderData | null; events: LogicEvent[] } {
     const level = levels[this.currentLevelIdx];
     if (orderIdx >= level.orders.length) {
-      this.defeatBoss();
-      return null;
+      const defeatEvents = this.defeatBoss();
+      return { order: null, events: defeatEvents };
     }
     this.currentOrderIdx = orderIdx;
     this.orderFailed = false;
     const rawOrder = level.orders[orderIdx];
-    const order = items ? this.getScaledOrder(rawOrder, items) : rawOrder;
+    const order = items ? this.getScaledOrder(rawOrder, items, deps) : rawOrder;
     this.timerRemaining = order.isTimed ? order.timeLimit || 0 : 0;
 
-    globalBus.emit('boss:orderLoaded', {
-      orderIdx,
+    return {
       order,
-      isTimed: order.isTimed || false,
-      timeLimit: order.timeLimit || 0
-    } as BossOrderLoadedEvent);
-
-    return order;
+      events: [{
+        type: 'boss:orderLoaded',
+        payload: {
+          orderIdx,
+          order,
+          isTimed: order.isTimed || false,
+          timeLimit: order.timeLimit || 0
+        }
+      }]
+    };
   }
 
   /**
    * Apply damage from a submitted order.
    * Returns { hpLeft, isDefeated }.
    */
-  applyDamage(damage: number): ApplyDamageResult {
+  applyDamage(damage: number): ApplyDamageResult & { events: LogicEvent[] } {
     this.currentHp -= damage;
     const isDefeated = this.currentHp <= 0;
 
-    globalBus.emit('boss:hpChanged', {
-      currentHp: Math.max(0, this.currentHp),
-      totalHp: this.totalHp,
-      pct: Math.max(0, ((this.totalHp - this.currentHp) / this.totalHp) * 100)
-    } as BossHpChangedEvent);
-
-    return { hpLeft: Math.max(0, this.currentHp), isDefeated };
+    return {
+      hpLeft: Math.max(0, this.currentHp),
+      isDefeated,
+      events: [{
+        type: 'boss:hpChanged',
+        payload: {
+          currentHp: Math.max(0, this.currentHp),
+          totalHp: this.totalHp,
+          pct: Math.max(0, ((this.totalHp - this.currentHp) / this.totalHp) * 100)
+        }
+      }]
+    };
   }
 
   /**
@@ -275,7 +310,7 @@ export class BossLogic {
    * deferred until after the dialogue so that a page refresh mid-dialogue won't
    * lose progress.  Callers must emit those events themselves after saving.
    */
-  commitSubmit(damage: number, levels: LevelData[]): ApplyDamageResult {
+  commitSubmit(damage: number, levels: LevelData[]): ApplyDamageResult & { events: LogicEvent[] } {
     const result = this.applyDamage(damage);
     if (result.isDefeated) {
       if (this.fsm.can('DEFEAT')) this.fsm.send('DEFEAT');
@@ -285,7 +320,7 @@ export class BossLogic {
       if (isLastOrder) {
         this.currentHp = 0;
         if (this.fsm.can('DEFEAT')) this.fsm.send('DEFEAT');
-        return { hpLeft: 0, isDefeated: true };
+        return { hpLeft: 0, isDefeated: true, events: result.events };
       }
       if (this.fsm.can('ORDER_DONE')) this.fsm.send('ORDER_DONE');
       this.currentOrderIdx++;
@@ -297,65 +332,61 @@ export class BossLogic {
    * Mark order submission complete. Returns true if boss defeated.
    * (Kept for backward compatibility; new code should use commitSubmit.)
    */
-  finishSubmit(damage: number, levels: LevelData[]): ApplyDamageResult {
+  finishSubmit(damage: number, levels: LevelData[]): ApplyDamageResult & { events: LogicEvent[] } {
     const result = this.applyDamage(damage);
+    const events = [...result.events];
     if (result.isDefeated) {
-      this.defeatBoss();
+      events.push(...this.defeatBoss());
     } else {
       const level = levels[this.currentLevelIdx];
       const isLastOrder = this.currentOrderIdx >= level.orders.length - 1;
       if (isLastOrder) {
         this.currentHp = 0;
-        this.defeatBoss();
-        return { hpLeft: 0, isDefeated: true };
+        events.push(...this.defeatBoss());
+        return { hpLeft: 0, isDefeated: true, events };
       }
       if (this.fsm.can('ORDER_DONE')) this.fsm.send('ORDER_DONE');
       this.currentOrderIdx++;
-      globalBus.emit('boss:orderComplete', { nextOrderIdx: this.currentOrderIdx + 1 });
+      events.push({ type: 'boss:orderComplete', payload: { nextOrderIdx: this.currentOrderIdx + 1 } });
     }
-    return result;
+    return { ...result, events };
   }
 
   /**
    * Handle order failure (timeout).
    */
-  failOrder(): void {
+  failOrder(): LogicEvent[] {
     this.orderFailed = true;
     if (this.fsm.can('FAIL_ORDER')) this.fsm.send('FAIL_ORDER');
-    globalBus.emit('boss:orderFailed', {
-      orderIdx: this.currentOrderIdx,
-      nextOrderIdx: this.currentOrderIdx + 1
-    } as BossOrderFailedEvent);
+    return [{ type: 'boss:orderFailed', payload: { orderIdx: this.currentOrderIdx, nextOrderIdx: this.currentOrderIdx + 1 } }];
   }
 
   /**
    * Boss defeated.
    */
-  defeatBoss(): void {
+  defeatBoss(): LogicEvent[] {
     if (this.fsm.can('DEFEAT')) this.fsm.send('DEFEAT');
-    globalBus.emit('boss:defeated', {
-      levelIdx: this.currentLevelIdx
-    } as BossDefeatedEvent);
+    return [{ type: 'boss:defeated', payload: { levelIdx: this.currentLevelIdx } }];
   }
 
   /**
    * Tick the timer. Returns remaining seconds or -1 if time's up.
    */
-  tickTimer(): number {
-    if (this.timerRemaining <= 0) return -1;
+  tickTimer(): { remaining: number; events: LogicEvent[] } {
+    if (this.timerRemaining <= 0) return { remaining: -1, events: [] };
     this.timerRemaining--;
-    globalBus.emit('boss:timerTick', { remaining: this.timerRemaining });
+    const events: LogicEvent[] = [{ type: 'boss:timerTick', payload: { remaining: this.timerRemaining } }];
     if (this.timerRemaining <= 0) {
-      return -1;
+      return { remaining: -1, events };
     }
-    return this.timerRemaining;
+    return { remaining: this.timerRemaining, events };
   }
 
   /**
    * Check if current order can be fulfilled.
    */
-  canFulfillOrder(board: any, levels: LevelData[], items: { [key: string]: ItemData }): boolean {
-    const order = this.getCurrentOrder(levels, items);
+  canFulfillOrder(board: BoardLike, levels: LevelData[], items: { [key: string]: ItemData }, deps: BossProgressionDeps): boolean {
+    const order = this.getCurrentOrder(levels, deps, items);
     if (!order) return false;
 
     for (const req of order.required) {
@@ -368,12 +399,13 @@ export class BossLogic {
   /**
    * Get current order.
    */
-  getCurrentOrder(levels: LevelData[], items?: { [key: string]: ItemData }): OrderData | null {
+  getCurrentOrder(levels: LevelData[], deps: BossProgressionDeps, items?: { [key: string]: ItemData }): OrderData | null {
     if (this.currentLevelIdx < 0) return null;
     const level = levels[this.currentLevelIdx];
     if (!level || this.currentOrderIdx >= level.orders.length) return null;
     const rawOrder = level.orders[this.currentOrderIdx];
-    return items ? this.getScaledOrder(rawOrder, items) : rawOrder;
+    if (!items) return rawOrder;
+    return this.getScaledOrder(rawOrder, items, deps);
   }
 
   /**
@@ -387,7 +419,7 @@ export class BossLogic {
   /**
    * Serialize for save.
    */
-  serialize(): any {
+  serialize(): BossSnapshot {
     return {
       levelIdx: this.currentLevelIdx,
       orderIdx: this.currentOrderIdx,
@@ -401,7 +433,7 @@ export class BossLogic {
   /**
    * Restore from save.
    */
-  deserialize(data: any): void {
+  deserialize(data: BossSnapshot | null): void {
     if (!data) return;
     this.currentLevelIdx = data.levelIdx ?? 0;
     this.currentOrderIdx = data.orderIdx ?? 0;

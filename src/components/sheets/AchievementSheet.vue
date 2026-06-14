@@ -1,224 +1,308 @@
-<!-- ============================================================
-     AchievementSheet.vue — Achievement bottom sheet
-     ============================================================
-     Replaces #achievement-sheet from index.html lines 602-616.
-     Uses achievementStore for achievement data.
-     ============================================================ -->
 <template>
   <BaseBottomSheet
     v-model="isOpen"
     sheetId="achievement-sheet"
-    :title="i18nStore.t('achievement.panelTitle')"
+    title="通行证"
     icon="🏆"
-    :subtitle="i18nStore.t('achievement.panelSub')"
+    theme="warm"
   >
-    <div id="achievement-list" class="achievement-list">
-      <div
-        v-for="ach in achievementStore.achievementList"
-        :key="ach.id"
-        class="achievement-item"
-        :class="{
-          completed: achievementStore.completed.has(ach.id),
-          unlocked: achievementStore.unlocked.has(ach.id)
-        }"
-      >
-        <span class="achievement-icon">{{ ach.icon }}</span>
-        <div class="achievement-info">
-          <span class="achievement-name">{{ ach.name }}</span>
-          <span class="achievement-desc">{{ ach.description }}</span>
-        </div>
-        <span v-if="achievementStore.completed.has(ach.id)" class="achievement-check">✅</span>
-        <button
-          v-else-if="achievementStore.unlocked.has(ach.id)"
-          class="achievement-claim-btn"
-          @click="claimReward(ach)"
-        >
-          🎁
-        </button>
+    <div class="ach-progress-capsule">
+      <div class="ach-trophy-circle">🏆</div>
+      <div class="ach-progress-bar">
+        <div class="ach-progress-fill" :style="{ width: `${progressPct}%` }" />
       </div>
+      <span class="ach-progress-text">{{ achievementStore.completedCount }}/{{ achievementStore.totalAchievements }}</span>
+      <div class="ach-gift-circle">🎁</div>
+    </div>
+
+    <div class="ach-list">
+      <template v-for="(ach, index) in sortedAchievements" :key="ach.id">
+        <AchievementCard
+          :achievement="ach"
+          :status="getStatus(ach.id)"
+          :progress="getAchievementProgress(ach)"
+          @claim="onClaim"
+        />
+        <div v-if="index < sortedAchievements.length - 1" class="card-connector" />
+      </template>
+    </div>
+
+    <div class="ach-bottom-bar">
+      点击道具，在这里查看它的信息
+    </div>
+
+    <div class="claim-all-container">
+      <button
+        class="claim-all-btn"
+        :disabled="achievementStore.unlockedCount === 0"
+        @click="claimAll"
+      >
+        一键领取
+      </button>
     </div>
   </BaseBottomSheet>
+
+  <Teleport to="#game-container">
+    <Transition name="ach-nav-fade">
+      <div v-if="isOpen" class="ach-side-nav">
+        <button class="nav-btn nav-trophy" :class="{ active: activeNav === 'achievements' }" @click="activeNav = 'achievements'">🏆</button>
+        <button class="nav-btn nav-book" :class="{ active: activeNav === 'collection' }" @click="activeNav = 'collection'">📖</button>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import BaseBottomSheet from './BaseBottomSheet.vue'
+import AchievementCard from './AchievementCard.vue'
 import { useSheet } from '../../composables/useSheet'
-import { useAchievementStore } from '../../stores/achievementStore'
-import { useI18nStore } from '../../stores/i18nStore'
-import type { Achievement } from '../../stores/achievementStore'
+import { useAchievementStore, type Achievement } from '../../stores/achievementStore'
+import { useCollectionStore } from '../../stores/collectionStore'
+import { useLoopStore } from '../../stores/loopStore'
 
 const { isOpen } = useSheet('achievement-sheet')
 const achievementStore = useAchievementStore()
-const i18nStore = useI18nStore()
+const activeNav = ref<'achievements' | 'collection'>('achievements')
 
-function claimReward(ach: Achievement) {
-  achievementStore.complete(ach.id)
+const progressPct = computed(() => {
+  const total = achievementStore.totalAchievements
+  if (total === 0) return 0
+  return Math.round((achievementStore.completedCount / total) * 100)
+})
+
+function getStatus(id: string): 'active' | 'claimed' | 'locked' {
+  if (achievementStore.completed.has(id)) return 'claimed'
+  if (achievementStore.unlocked.has(id)) return 'active'
+  return 'locked'
+}
+
+const statusPriority: Record<string, number> = { active: 0, locked: 1, claimed: 2 }
+
+const sortedAchievements = computed(() => {
+  return [...achievementStore.achievementList].sort((a, b) => {
+    return statusPriority[getStatus(a.id)] - statusPriority[getStatus(b.id)]
+  })
+})
+
+function onClaim(id: string) {
+  achievementStore.complete(id)
+}
+
+function claimAll() {
+  const pendingIds = Array.from(achievementStore.unlocked)
+  pendingIds.forEach(id => {
+    achievementStore.complete(id)
+  })
+}
+
+function getAchievementProgress(ach: Achievement): number {
+  if (achievementStore.completed.has(ach.id) || achievementStore.unlocked.has(ach.id)) {
+    return 100
+  }
+  let currentValue = 0
+  if (ach.condition === 'collectionPct') {
+    currentValue = useCollectionStore().completionPercentage ?? 0
+  } else if (ach.condition === 'loopReached') {
+    currentValue = useLoopStore().loopIndex
+  } else {
+    currentValue = achievementStore.stats[ach.condition] || 0
+  }
+  return Math.min(100, Math.floor((currentValue / ach.target) * 100))
 }
 </script>
 
 <style scoped>
-/* ---- Achievement Progress ---- */
-.achievement-progress {
+/* ---- Progress Capsule ---- */
+.ach-progress-capsule {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px;
-  background: white;
-  border-radius: 12px;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--ach-text-dark, #695e59);
+  border: 1px solid var(--off-white, #FAF5F8);
+  border-radius: 13px;
   margin-bottom: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-dark);
 }
 
-.achievement-progress-bar {
+.ach-trophy-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ach-trophy-blue, #70a7c9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ach-gift-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ach-gift-gold, #e0b352);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ach-progress-bar {
   flex: 1;
   height: 8px;
-  background: #eee;
+  background: rgba(245, 245, 250, 0.2);
   border-radius: 4px;
   overflow: hidden;
 }
 
-.achievement-progress-fill {
+.ach-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #FFD700, #FFA500);
+  background: linear-gradient(90deg, var(--ach-btn-claim, #c99270), var(--caramel, #DDAA8B));
   border-radius: 4px;
   transition: width 0.3s ease;
 }
 
-/* ---- Achievement List ---- */
-.achievement-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.ach-progress-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--off-white, #FAF5F8);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  flex-shrink: 0;
 }
 
-/* ---- Achievement Card ---- */
-.achievement-item {
+/* ---- Achievement List ---- */
+.ach-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 4px 60px;
+}
+
+.card-connector {
+  width: 2px;
+  height: 12px;
+  background: var(--ach-connector, #e3cec0);
+  flex-shrink: 0;
+}
+
+/* ---- Bottom Info Bar ---- */
+.ach-bottom-bar {
+  background: var(--ach-bottom-bg, #ffe1cc);
+  border: 3px solid var(--ach-bottom-border, #ddaa8b);
+  border-radius: 16px;
+  min-height: 40px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  opacity: 0.8;
-  transition: all 0.2s ease;
-}
-
-.achievement-item.completed {
-  opacity: 1;
-  background: linear-gradient(135deg, #fff, #fffde7);
-  border-left: 4px solid #FFC107;
-}
-
-.achievement-item.unlocked {
-  opacity: 1;
-  background: linear-gradient(135deg, #fffde7, #fff8e1);
-  border-left: 4px solid #FF9800;
-  border-color: rgba(255, 152, 0, 0.4);
-  animation: achievement-claimable-pulse 2s ease-in-out infinite;
-}
-
-@keyframes achievement-claimable-pulse {
-  0%, 100% { opacity: 0.85; }
-  50% { opacity: 1; }
-}
-
-/* ---- Achievement Icon ---- */
-.achievement-icon {
-  font-size: 28px;
-  filter: grayscale(1);
+  justify-content: center;
+  font-size: 14px;
+  font-family: 'Jiangcheng Yuanti', sans-serif;
+  font-weight: 400;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  margin-top: 6px;
   flex-shrink: 0;
 }
 
-.achievement-item.completed .achievement-icon,
-.achievement-item.unlocked .achievement-icon {
-  filter: grayscale(0);
+/* ---- Claim All ---- */
+.claim-all-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 14px;
+  background: linear-gradient(0deg, var(--ach-bg-panel, #ffdfc8) 80%, rgba(255, 223, 200, 0) 100%);
+  display: flex;
+  justify-content: center;
+  z-index: 5;
 }
 
-/* ---- Achievement Info ---- */
-.achievement-info {
-  flex: 1;
-  min-width: 0;
+.claim-all-btn {
+  width: 100%;
+  max-width: 280px;
+  height: 36px;
+  border-radius: 32px;
+  border: none;
+  background: linear-gradient(180deg, var(--ach-btn-claim, #c99270) 0%, #b07e5c 100%);
+  color: var(--off-white, #FAF5F8);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Jiangcheng Yuanti', sans-serif;
+  cursor: pointer;
+  box-shadow: var(--ach-shadow-red);
+  transition: transform 0.1s ease, filter 0.15s ease;
+}
+
+.claim-all-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.claim-all-btn:disabled {
+  background: var(--ach-card-inactive, #e4d0c1);
+  color: rgba(105, 94, 89, 0.5);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ---- Side Navigation ---- */
+.ach-side-nav {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
+  z-index: 201;
 }
 
-.achievement-name {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--text-dark);
-}
-
-.achievement-desc {
-  font-size: 11px;
-  color: var(--text-muted-alt);
-}
-
-/* ---- Achievement Card Bar ---- */
-.achievement-card-bar {
-  height: 4px;
-  background: #eee;
-  border-radius: 2px;
-  overflow: hidden;
-  margin-top: 2px;
-}
-
-.achievement-card-fill {
-  height: 100%;
-  background: var(--color-success);
-}
-
-/* ---- Achievement Reward ---- */
-.achievement-card-reward {
-  font-size: 12px;
-  font-weight: 700;
-  color: #1976D2;
-  white-space: nowrap;
-}
-
-.achievement-card-reward.claimed {
-  color: var(--text-light);
-}
-
-/* ---- Achievement Check ---- */
-.achievement-check {
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-/* ---- Achievement Claim Button ---- */
-.achievement-claim-btn {
-  padding: 6px 14px;
+.nav-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   border: none;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: 'Jiangcheng Yuanti', inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
   cursor: pointer;
-  background: linear-gradient(135deg, #FF9800, #F57C00);
-  color: white;
-  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.35);
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  flex-shrink: 0;
-  animation: claim-btn-glow 1.5s ease-in-out infinite alternate;
+  transition: transform 0.15s ease;
 }
 
-@keyframes claim-btn-glow {
-  0% { opacity: 0.8; }
-  100% { opacity: 1; }
+.nav-btn:active {
+  transform: scale(0.9);
 }
 
-.achievement-claim-btn:hover {
-  filter: brightness(1.1);
-  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.45);
+.nav-trophy {
+  background: var(--ach-btn-claim, #c99270);
+  box-shadow: var(--ach-shadow-red);
 }
 
-.achievement-claim-btn:active {
-  transform: scale(0.93);
+.nav-book {
+  background: var(--off-white, #FAF5F8);
+  box-shadow: var(--shadow-neu-up), var(--shadow-neu-down);
+}
+
+.nav-btn.active {
+  outline: 2px solid var(--accent-pink, #FF6584);
+  outline-offset: 2px;
+}
+
+.ach-nav-fade-enter-active,
+.ach-nav-fade-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.ach-nav-fade-enter-from,
+.ach-nav-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-50%) translateX(10px);
 }
 </style>

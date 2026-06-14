@@ -20,8 +20,6 @@
       <div class="vn-character-layer">
         <div
           class="vn-character-sprite"
-          :class="characterSpriteClass"
-          :style="characterSpriteStyle"
         />
       </div>
 
@@ -98,7 +96,7 @@
             >
               <span
                 class="vn-history-speaker"
-                :style="{ color: vnStore.getCharacterColor(entry.speaker) }"
+                :style="{ color: entry.speakerId ? vnStore.getCharacterColor(entry.speakerId) : '#888' }"
               >{{ entry.speaker }}</span>
               <span class="vn-history-text">{{ entry.text }}</span>
             </div>
@@ -152,16 +150,6 @@ const backgroundStyle = computed(() => {
       backgroundImage: `url('${bg}')`,
     };
   }
-  return {};
-});
-
-const characterSpriteClass = computed(() => {
-  // In the legacy code, the character sprite was not actively used
-  // (background portrait was used instead). Keep structural parity.
-  return '';
-});
-
-const characterSpriteStyle = computed(() => {
   return {};
 });
 

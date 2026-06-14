@@ -7,7 +7,15 @@ import { ref, computed } from 'vue';
 import { globalBus } from '../core/EventBus';
 import { EnergyLogic } from '../logic/EnergyLogic';
 import { useConfigStore } from './configStore';
+import type { EnergySerializeData } from '../types/serialize';
 import { useLoopStore } from './loopStore';
+import { devConfig } from '../core/DevConfig';
+import { OfflineProductionManager } from '../features/OfflineProductionManager';
+import type { LogicEvent } from '../logic/BoardLogic';
+
+function emitEvents(events: LogicEvent[]): void {
+    globalBus.emitLogicEvents(events);
+}
 
 export const useEnergyStore = defineStore('energy', () => {
     // --- State ---
@@ -16,12 +24,8 @@ export const useEnergyStore = defineStore('energy', () => {
     const regenInterval = ref(0);
     const regenCap = ref(0);
     const fsmState = ref('');
-    const regenTimer = ref<any>(null);
+    let regenTimerHandle: ReturnType<typeof setInterval> | null = null;
 
-    // NOTE: useConfigStore() is called at the top level of this defineStore setup.
-    // This creates an init order dependency — Pinia must be installed before this store is first accessed.
-    // In practice this is safe because stores are first accessed after app.mount(), but restructuring
-    // to use a lazy getter would remove this dependency if needed.
     const configStore = useConfigStore();
     const logic = new EnergyLogic({
         ENERGY_REGEN_CAP: configStore.gameConfig.ENERGY_REGEN_CAP,
@@ -38,18 +42,7 @@ export const useEnergyStore = defineStore('energy', () => {
     regenCap.value = logic.regenCap;
     fsmState.value = logic.fsm.getState();
 
-    // --- Subscribe to logic events ---
-    // HMR LIMITATION: globalBus.on() listeners registered here will stack on HMR updates.
-    // EventBus.on() returns the handler ref (not an unsubscribe fn), so per-listener HMR cleanup
-    // would require storing each handler ref and calling globalBus.off() with it on dispose.
-    // For now, this is a known dev-only issue — full page reload clears it.
-    globalBus.on('energy:changed', (data) => {
-        if (data) {
-            current.value = data.current;
-            max.value = data.max;
-        }
-    });
-
+    // --- Subscribe to FSM state changes ---
     globalBus.on('energyfsm:stateChanged', (data) => {
         if (data) {
             fsmState.value = data.to;
@@ -66,66 +59,73 @@ export const useEnergyStore = defineStore('energy', () => {
 
     // --- Actions ---
     function spend(amount?: number): boolean {
-        const result = logic.spend(amount);
+        if (devConfig.enabled && devConfig.unlimitedEnergy) return true;
+        const { success, events } = logic.spend(amount);
         current.value = logic.current;
         fsmState.value = logic.fsm.getState();
-        return result;
+        emitEvents(events);
+        return success;
     }
 
     function add(amount: number): void {
-        logic.recover(amount);
+        const events = logic.recover(amount);
         current.value = logic.current;
         fsmState.value = logic.fsm.getState();
+        emitEvents(events);
     }
 
     function startRegen(): void {
-        logic.startRegen();
-        regenTimer.value = logic.regenTimer;
+        stopRegen();
+        regenTimerHandle = setInterval(() => {
+            const result = logic.tick();
+            if (result.changed) {
+                current.value = result.newCurrent;
+                fsmState.value = logic.fsm.getState();
+                emitEvents(result.events);
+            }
+        }, logic.regenInterval);
     }
 
     function stopRegen(): void {
-        logic.stopRegen();
-        regenTimer.value = logic.regenTimer;
-    }
-
-    function tick(): void {
-        // This would be called by a timer in the actual implementation
-        // For now, we just update the state
-        current.value = logic.current;
-        fsmState.value = logic.fsm.getState();
+        if (regenTimerHandle !== null) {
+            clearInterval(regenTimerHandle);
+            regenTimerHandle = null;
+        }
     }
 
     function setMax(newMax: number): void {
-        logic.setMax(newMax);
+        const events = logic.setMax(newMax);
         max.value = logic.max;
         regenCap.value = logic.regenCap;
         current.value = logic.current;
         fsmState.value = logic.fsm.getState();
+        emitEvents(events);
     }
 
     function setRegenCap(newCap: number): void {
-        logic.setRegenCap(newCap);
+        const events = logic.setRegenCap(newCap);
         regenCap.value = logic.regenCap;
         current.value = logic.current;
         fsmState.value = logic.fsm.getState();
+        emitEvents(events);
     }
 
     function setRegenInterval(newInterval: number): void {
-        logic.setRegenInterval(newInterval);
+        logic.regenInterval = newInterval;
         regenInterval.value = logic.regenInterval;
-        regenTimer.value = logic.regenTimer;
+        startRegen();
     }
 
     function resetToBase(): void {
         const configStore = useConfigStore();
         const loopStore = useLoopStore();
-        logic.setMax(configStore.gameConfig.MAX_ENERGY || 100);
-        logic.setRegenCap(configStore.gameConfig.ENERGY_REGEN_CAP || configStore.gameConfig.MAX_ENERGY || 100);
+        const maxEvents = logic.setMax(configStore.gameConfig.MAX_ENERGY || 100);
+        const capEvents = logic.setRegenCap(configStore.gameConfig.ENERGY_REGEN_CAP || configStore.gameConfig.MAX_ENERGY || 100);
         let interval = configStore.gameConfig.ENERGY_REGEN_INTERVAL || 3000;
         if (loopStore.hasRule('energyRegenDown')) {
             interval = Math.floor(interval * 1.5);
         }
-        logic.setRegenInterval(interval);
+        logic.regenInterval = interval;
         logic.current = logic.max;
 
         max.value = logic.max;
@@ -133,10 +133,7 @@ export const useEnergyStore = defineStore('energy', () => {
         regenInterval.value = logic.regenInterval;
         current.value = logic.current;
         fsmState.value = logic.fsm.getState();
-    }
-
-    function destroyLogic(): void {
-        logic.destroy();
+        emitEvents([...maxEvents, ...capEvents]);
     }
 
     // --- Serialization ---
@@ -150,17 +147,29 @@ export const useEnergyStore = defineStore('energy', () => {
         };
     }
 
-    function deserialize(data: any) {
+    function deserialize(data: unknown, savedTimestamp?: number) {
         if (!data) return;
+        const d = data as EnergySerializeData;
         
-        logic.current = data.current ?? logic.current;
-        logic.max = data.max ?? logic.max;
-        logic.regenCap = data.regenCap ?? logic.regenCap;
-        logic.regenInterval = data.regenInterval ?? logic.regenInterval;
+        logic.current = d.current ?? logic.current;
+        logic.max = d.max ?? logic.max;
+        logic.regenCap = d.regenCap ?? logic.regenCap;
+        logic.regenInterval = d.regenInterval ?? logic.regenInterval;
         
-        // Restore FSM state
-        if (data.state) {
-            logic.fsm.reset(data.state);
+        if (d.state) {
+            logic.fsm.reset(d.state);
+        }
+
+        if (savedTimestamp) {
+            const result = OfflineProductionManager.calculateEnergyRecovery(savedTimestamp, {
+                current: logic.current,
+                regenCap: logic.regenCap,
+                regenInterval: logic.regenInterval,
+                regenAmount: logic.regenAmount || 1,
+            });
+            if (result.energyRecovered > 0) {
+                logic.current = result.newCurrent;
+            }
         }
         
         current.value = logic.current;
@@ -177,7 +186,6 @@ export const useEnergyStore = defineStore('energy', () => {
         regenInterval,
         regenCap,
         fsmState,
-        regenTimer,
         
         // Computed
         percentage,
@@ -189,12 +197,10 @@ export const useEnergyStore = defineStore('energy', () => {
         add,
         startRegen,
         stopRegen,
-        tick,
         setMax,
         setRegenCap,
         setRegenInterval,
         resetToBase,
-        destroyLogic,
         
         // Serialization
         serialize,

@@ -26,9 +26,9 @@
     },
     "SR": {
       "generator": 0.25,
-      "joker": 0.20,
-      "scissor": 0.20,
-      "energy": 0.20,
+      "joker": 0.2,
+      "scissor": 0.2,
+      "energy": 0.2,
       "special": 0.15
     }
   },
@@ -86,7 +86,8 @@
       "value": {
         "chain": "lips",
         "level": 1
-      }
+      },
+      "itemId": "lip_1"
     },
     {
       "id": "r_item_lip2",
@@ -99,7 +100,8 @@
       "value": {
         "chain": "lips",
         "level": 2
-      }
+      },
+      "itemId": "lip_2"
     },
     {
       "id": "r_item_lip_rand12",
@@ -112,7 +114,8 @@
       "value": {
         "chain": "lips",
         "level": "random_1_2"
-      }
+      },
+      "itemId": "r_item_lip_rand12"
     },
     {
       "id": "r_item_lip3",
@@ -125,7 +128,8 @@
       "value": {
         "chain": "lips",
         "level": 3
-      }
+      },
+      "itemId": "lip_3"
     },
     {
       "id": "r_item_lip4",
@@ -138,7 +142,8 @@
       "value": {
         "chain": "lips",
         "level": 4
-      }
+      },
+      "itemId": "lip_4"
     },
     {
       "id": "r_item_lip5",
@@ -151,7 +156,8 @@
       "value": {
         "chain": "lips",
         "level": 5
-      }
+      },
+      "itemId": "lip_5"
     },
     {
       "id": "r_item_perf1",
@@ -164,7 +170,8 @@
       "value": {
         "chain": "perfume",
         "level": 1
-      }
+      },
+      "itemId": "perf_1"
     },
     {
       "id": "r_item_perf2",
@@ -177,7 +184,8 @@
       "value": {
         "chain": "perfume",
         "level": 2
-      }
+      },
+      "itemId": "perf_2"
     },
     {
       "id": "r_item_perf_rand12",
@@ -190,7 +198,8 @@
       "value": {
         "chain": "perfume",
         "level": "random_1_2"
-      }
+      },
+      "itemId": "r_item_perf_rand12"
     },
     {
       "id": "r_item_perf3",
@@ -203,7 +212,8 @@
       "value": {
         "chain": "perfume",
         "level": 3
-      }
+      },
+      "itemId": "perf_3"
     },
     {
       "id": "r_item_perf4",
@@ -216,7 +226,8 @@
       "value": {
         "chain": "perfume",
         "level": 4
-      }
+      },
+      "itemId": "perf_4"
     },
     {
       "id": "r_item_perf5",
@@ -229,7 +240,8 @@
       "value": {
         "chain": "perfume",
         "level": 5
-      }
+      },
+      "itemId": "perf_5"
     },
     {
       "id": "r_item_study1",
@@ -242,7 +254,8 @@
       "value": {
         "chain": "study",
         "level": 1
-      }
+      },
+      "itemId": "study_1"
     },
     {
       "id": "r_item_study2",
@@ -255,7 +268,8 @@
       "value": {
         "chain": "study",
         "level": 2
-      }
+      },
+      "itemId": "study_2"
     },
     {
       "id": "r_item_study_rand12",
@@ -268,7 +282,8 @@
       "value": {
         "chain": "study",
         "level": "random_1_2"
-      }
+      },
+      "itemId": "r_item_study_rand12"
     },
     {
       "id": "r_item_study3",
@@ -281,7 +296,8 @@
       "value": {
         "chain": "study",
         "level": 3
-      }
+      },
+      "itemId": "study_3"
     },
     {
       "id": "r_item_study4",
@@ -294,7 +310,8 @@
       "value": {
         "chain": "study",
         "level": 4
-      }
+      },
+      "itemId": "study_4"
     },
     {
       "id": "r_item_study5",
@@ -307,7 +324,8 @@
       "value": {
         "chain": "study",
         "level": 5
-      }
+      },
+      "itemId": "study_5"
     },
     {
       "id": "r_item_food1",
@@ -320,7 +338,8 @@
       "value": {
         "chain": "food",
         "level": 1
-      }
+      },
+      "itemId": "food_1"
     },
     {
       "id": "r_item_food2",
@@ -333,7 +352,8 @@
       "value": {
         "chain": "food",
         "level": 2
-      }
+      },
+      "itemId": "food_2"
     },
     {
       "id": "r_item_food_rand12",
@@ -346,7 +366,8 @@
       "value": {
         "chain": "food",
         "level": "random_1_2"
-      }
+      },
+      "itemId": "r_item_food_rand12"
     },
     {
       "id": "r_item_food3",
@@ -359,7 +380,8 @@
       "value": {
         "chain": "food",
         "level": 3
-      }
+      },
+      "itemId": "food_3"
     },
     {
       "id": "r_item_food4",
@@ -372,7 +394,8 @@
       "value": {
         "chain": "food",
         "level": 4
-      }
+      },
+      "itemId": "food_4"
     },
     {
       "id": "r_item_food5",
@@ -385,7 +408,8 @@
       "value": {
         "chain": "food",
         "level": 5
-      }
+      },
+      "itemId": "food_5"
     },
     {
       "id": "r_item_mix_lv1",
@@ -398,7 +422,8 @@
       "value": {
         "chain": "random",
         "level": 1
-      }
+      },
+      "itemId": "r_item_mix_lv1"
     },
     {
       "id": "r_item_mix_lv2",
@@ -411,7 +436,8 @@
       "value": {
         "chain": "random",
         "level": 2
-      }
+      },
+      "itemId": "r_item_mix_lv2"
     },
     {
       "id": "r_item_mix1",
@@ -424,7 +450,8 @@
       "value": {
         "chain": "random",
         "level": "random_3_4"
-      }
+      },
+      "itemId": "r_item_mix1"
     },
     {
       "id": "r_item_mix2",
@@ -437,7 +464,8 @@
       "value": {
         "chain": "random",
         "level": "random_3_5"
-      }
+      },
+      "itemId": "r_item_mix2"
     },
     {
       "id": "r_item_lucky_bag",
@@ -450,7 +478,8 @@
       "value": {
         "chain": "random",
         "level": "random_1_3"
-      }
+      },
+      "itemId": "r_item_lucky_bag"
     },
     {
       "id": "sr_gen_lip4",
@@ -464,7 +493,8 @@
         "genChain": "gen_makeup",
         "level": 4,
         "cgId": null
-      }
+      },
+      "itemId": "gen_makeup_4"
     },
     {
       "id": "sr_gen_lip5",
@@ -478,7 +508,8 @@
         "genChain": "gen_makeup",
         "level": 5,
         "cgId": null
-      }
+      },
+      "itemId": "gen_makeup_5"
     },
     {
       "id": "sr_gen_perf4",
@@ -492,7 +523,8 @@
         "genChain": "gen_makeup",
         "level": 4,
         "cgId": null
-      }
+      },
+      "itemId": "gen_makeup_4"
     },
     {
       "id": "sr_gen_perf5",
@@ -506,7 +538,8 @@
         "genChain": "gen_makeup",
         "level": 5,
         "cgId": null
-      }
+      },
+      "itemId": "gen_makeup_5"
     },
     {
       "id": "sr_gen_study4",
@@ -520,7 +553,8 @@
         "genChain": "gen_study",
         "level": 4,
         "cgId": null
-      }
+      },
+      "itemId": "gen_study_4"
     },
     {
       "id": "sr_gen_study5",
@@ -534,7 +568,8 @@
         "genChain": "gen_study",
         "level": 5,
         "cgId": null
-      }
+      },
+      "itemId": "gen_study_5"
     },
     {
       "id": "sr_gen_food4",
@@ -548,7 +583,8 @@
         "genChain": "gen_study",
         "level": 4,
         "cgId": null
-      }
+      },
+      "itemId": "gen_study_4"
     },
     {
       "id": "sr_gen_food5",
@@ -562,7 +598,8 @@
         "genChain": "gen_study",
         "level": 5,
         "cgId": null
-      }
+      },
+      "itemId": "gen_study_5"
     },
     {
       "id": "sr_joker",
@@ -572,7 +609,8 @@
       "icon": "🃏",
       "name": "万能百搭牌",
       "effect": "add_joker",
-      "value": {}
+      "value": {},
+      "itemId": "joker"
     },
     {
       "id": "sr_scissor",
@@ -582,7 +620,8 @@
       "icon": "✂️",
       "name": "时空剪刀",
       "effect": "add_scissor",
-      "value": {}
+      "value": {},
+      "itemId": "scissor"
     },
     {
       "id": "sr_double_gen",
@@ -592,7 +631,10 @@
       "icon": "⚡",
       "name": "双倍产出卡",
       "effect": "double_gen",
-      "value": { "turns": 3 }
+      "value": {
+        "turns": 3
+      },
+      "itemId": "sr_double_gen"
     },
     {
       "id": "sr_energy_full",
@@ -602,7 +644,10 @@
       "icon": "🔋",
       "name": "体力满血包",
       "effect": "add_energy_item",
-      "value": { "energy": 100 }
+      "value": {
+        "energy": 100
+      },
+      "itemId": "energy_potion_100"
     },
     {
       "id": "r_energy_potion",
@@ -613,7 +658,10 @@
       "name": "体力药水",
       "description": "点击使用，恢复20点体力",
       "effect": "add_energy_item",
-      "value": { "energy": 20 }
+      "value": {
+        "energy": 20
+      },
+      "itemId": "energy_potion_20"
     },
     {
       "id": "sr_clear_lv1",
@@ -623,7 +671,8 @@
       "icon": "🧹",
       "name": "扫帚进阶",
       "effect": "clear_lv1",
-      "value": {}
+      "value": {},
+      "itemId": "sr_clear_lv1"
     },
     {
       "id": "sr_reroll_1",
@@ -633,7 +682,10 @@
       "icon": "🔄",
       "name": "置换卷轴小",
       "effect": "reroll",
-      "value": { "count": 3 }
+      "value": {
+        "count": 3
+      },
+      "itemId": "sr_reroll_1"
     },
     {
       "id": "sr_reroll_2",
@@ -643,7 +695,10 @@
       "icon": "🔄",
       "name": "置换卷轴大",
       "effect": "reroll",
-      "value": { "count": 5 }
+      "value": {
+        "count": 5
+      },
+      "itemId": "sr_reroll_2"
     },
     {
       "id": "sr_lucky_7",
@@ -653,7 +708,10 @@
       "icon": "🍀",
       "name": "幸运七号",
       "effect": "lucky_coin",
-      "value": { "count": 7 }
+      "value": {
+        "count": 7
+      },
+      "itemId": "sr_lucky_7"
     },
     {
       "id": "sr_frag_pack",
@@ -663,7 +721,12 @@
       "icon": "📦",
       "name": "碎片大礼包",
       "effect": "add_fragment",
-      "value": { "chain": "random", "genLevel": 3, "count": 10 }
+      "value": {
+        "chain": "random",
+        "genLevel": 3,
+        "count": 10
+      },
+      "itemId": "sr_frag_pack"
     },
     {
       "id": "sr_gen_refresh",
@@ -673,7 +736,8 @@
       "icon": "🔁",
       "name": "合成器刷新卡",
       "effect": "gen_refresh",
-      "value": {}
+      "value": {},
+      "itemId": "sr_gen_refresh"
     },
     {
       "id": "sr_diamond_50",
@@ -683,7 +747,10 @@
       "icon": "💎",
       "name": "钻石红包",
       "effect": "add_diamond",
-      "value": { "amount": 50 }
+      "value": {
+        "amount": 50
+      },
+      "itemId": "sr_diamond_50"
     },
     {
       "id": "sr_gold_pack",
@@ -693,7 +760,10 @@
       "icon": "💰",
       "name": "金币大礼包",
       "effect": "add_gold",
-      "value": { "amount": 500 }
+      "value": {
+        "amount": 500
+      },
+      "itemId": "sr_gold_pack"
     },
     {
       "id": "sr_space_clean",
@@ -703,7 +773,8 @@
       "icon": "🧽",
       "name": "空间清理器",
       "effect": "space_clean",
-      "value": {}
+      "value": {},
+      "itemId": "sr_space_clean"
     },
     {
       "id": "sr_upgrade_1",
@@ -713,7 +784,8 @@
       "icon": "⬆️",
       "name": "微型升级卡",
       "effect": "upgrade_item",
-      "value": {}
+      "value": {},
+      "itemId": "sr_upgrade_1"
     },
     {
       "id": "sr_energy_coffee_s",
@@ -725,7 +797,8 @@
       "effect": "add_energy_item",
       "value": {
         "energy": 10
-      }
+      },
+      "itemId": "energy_potion_10"
     },
     {
       "id": "sr_energy_coffee_l",
@@ -737,7 +810,8 @@
       "effect": "add_energy_item",
       "value": {
         "energy": 30
-      }
+      },
+      "itemId": "energy_potion_30"
     },
     {
       "id": "sr_energy_milktea_s",
@@ -749,7 +823,8 @@
       "effect": "add_energy_item",
       "value": {
         "energy": 10
-      }
+      },
+      "itemId": "energy_potion_10"
     },
     {
       "id": "sr_energy_milktea_l",
@@ -761,7 +836,8 @@
       "effect": "add_energy_item",
       "value": {
         "energy": 30
-      }
+      },
+      "itemId": "energy_potion_30"
     },
     {
       "id": "sr_energy_juice_s",
@@ -773,7 +849,8 @@
       "effect": "add_energy_item",
       "value": {
         "energy": 10
-      }
+      },
+      "itemId": "energy_potion_10"
     },
     {
       "id": "sr_energy_juice_l",
@@ -785,7 +862,8 @@
       "effect": "add_energy_item",
       "value": {
         "energy": 30
-      }
+      },
+      "itemId": "energy_potion_30"
     },
     {
       "id": "sr_energy_soda_s",
@@ -797,7 +875,8 @@
       "effect": "add_energy_item",
       "value": {
         "energy": 10
-      }
+      },
+      "itemId": "energy_potion_10"
     },
     {
       "id": "sr_energy_soda_l",
@@ -809,7 +888,8 @@
       "effect": "add_energy_item",
       "value": {
         "energy": 30
-      }
+      },
+      "itemId": "energy_potion_30"
     },
     {
       "id": "sr_energy_sport_s",
@@ -821,7 +901,8 @@
       "effect": "add_energy_item",
       "value": {
         "energy": 10
-      }
+      },
+      "itemId": "energy_potion_10"
     },
     {
       "id": "sr_energy_sport_l",
@@ -833,7 +914,8 @@
       "effect": "add_energy_item",
       "value": {
         "energy": 30
-      }
+      },
+      "itemId": "energy_potion_30"
     },
     {
       "id": "sr_energy_coffee_xl",
@@ -845,7 +927,8 @@
       "effect": "add_energy_item",
       "value": {
         "energy": 50
-      }
+      },
+      "itemId": "energy_potion_50"
     },
     {
       "id": "sr_energy_milktea_xl",
@@ -857,7 +940,8 @@
       "effect": "add_energy_item",
       "value": {
         "energy": 50
-      }
+      },
+      "itemId": "energy_potion_50"
     },
     {
       "id": "sr_energy_juice_xl",
@@ -869,7 +953,8 @@
       "effect": "add_energy_item",
       "value": {
         "energy": 50
-      }
+      },
+      "itemId": "energy_potion_50"
     },
     {
       "id": "sr_energy_soda_xl",
@@ -881,7 +966,8 @@
       "effect": "add_energy_item",
       "value": {
         "energy": 50
-      }
+      },
+      "itemId": "energy_potion_50"
     },
     {
       "id": "ssr_lip6",
@@ -895,7 +981,8 @@
         "genChain": "gen_makeup",
         "level": 6,
         "cgId": "cg_lip_6"
-      }
+      },
+      "itemId": "gen_makeup_6"
     },
     {
       "id": "ssr_lip7",
@@ -909,7 +996,8 @@
         "genChain": "gen_makeup",
         "level": 7,
         "cgId": "cg_lip_7"
-      }
+      },
+      "itemId": "gen_makeup_7"
     },
     {
       "id": "ssr_perf6",
@@ -923,7 +1011,8 @@
         "genChain": "gen_makeup",
         "level": 6,
         "cgId": "cg_perf_6"
-      }
+      },
+      "itemId": "gen_makeup_6"
     },
     {
       "id": "ssr_perf7",
@@ -937,7 +1026,8 @@
         "genChain": "gen_makeup",
         "level": 7,
         "cgId": "cg_perf_7"
-      }
+      },
+      "itemId": "gen_makeup_7"
     },
     {
       "id": "ssr_study6",
@@ -951,7 +1041,8 @@
         "genChain": "gen_study",
         "level": 6,
         "cgId": "cg_study_6"
-      }
+      },
+      "itemId": "gen_study_6"
     },
     {
       "id": "ssr_study7",
@@ -965,7 +1056,8 @@
         "genChain": "gen_study",
         "level": 7,
         "cgId": "cg_study_7"
-      }
+      },
+      "itemId": "gen_study_7"
     },
     {
       "id": "ssr_food6",
@@ -979,7 +1071,8 @@
         "genChain": "gen_study",
         "level": 6,
         "cgId": "cg_food_6"
-      }
+      },
+      "itemId": "gen_study_6"
     },
     {
       "id": "ssr_food7",
@@ -993,7 +1086,8 @@
         "genChain": "gen_study",
         "level": 7,
         "cgId": "cg_food_7"
-      }
+      },
+      "itemId": "gen_study_7"
     }
   ]
 }

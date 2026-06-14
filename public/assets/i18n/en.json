@@ -26,7 +26,7 @@
     "chainFood": "Gourmet Series",
     "tabItems": "Item Album",
     "tabGacha": "Card Album",
-    "tabFragments": "Fragments",
+    "tabFragments": "Memory Hall",
     "raritySSR": "👑 SSR Legendary",
     "raritySR": "💜 SR Rare",
     "rarityR": "💙 R Common",
@@ -49,7 +49,18 @@
     "chainCompleteBadge": "✅ Complete",
     "rewardDiamonds": "💎+{amount}",
     "rewardEnergy": "⚡+{amount}",
-    "rewardGold": "🪙+{amount}"
+    "rewardGold": "🪙+{amount}",
+    "filterAll": "All",
+    "memoryCorridor": "Memory Hall",
+    "chapterUnlocked": "✅ Unlocked",
+    "chapterCanUnlock": "🔓 Unlockable",
+    "chapterLocked": "🔒 Locked",
+    "unlockStoryBtn": "✨ Unlock ({cost}🧩)",
+    "reviewStoryBtn": "📖 Review",
+    "allChaptersUnlocked": "✅ All chapters unlocked",
+    "needFragments": "Need {cost} fragments",
+    "canUnlockHint": "✨ Unlockable",
+    "chaptersCount": "📖 {current}/{total} chapters"
   },
   "dailyOrder": {
     "panelTitle": "Daily Errands",
@@ -58,7 +69,9 @@
     "completed": "✅ Done",
     "refreshed": "New daily orders refreshed!",
     "orderComplete": "Order Complete!",
-    "fulfill": "Fulfill"
+    "fulfill": "Fulfill",
+    "frozen": "⏸️ Daily orders are frozen",
+    "endLoop": "End this loop"
   },
   "dialogue": {
     "tapContinue": "Continue ▸"
@@ -257,6 +270,11 @@
     "currentEffect": "Current: {effect}",
     "nextEffect": "→ Next: {effect}"
   },
+  "map": {
+    "title": "Campus Map",
+    "replayStory": "Replay story",
+    "archived": "This board data has been archived and cannot be operated"
+  },
   "nav": {
     "recycle": "Recycle",
     "inventory": "Bag",
@@ -348,6 +366,40 @@
     "chapterEnded": "Chapter ended. Tap anywhere to return"
   },
   "loading": "Loading...",
+  "affection": {
+    "panelTitle": "💕 Affection",
+    "panelSub": "Your bond with him",
+    "level_0": "Stranger",
+    "level_1": "Acquaintance",
+    "level_2": "Friend",
+    "level_3": "Flirtatious",
+    "level_4": "Crush",
+    "level_5": "Bonded",
+    "affectionUp": "Affection +{n}",
+    "levelUp": "Relationship Up!",
+    "zoneLocked": "Not enough affection to unlock",
+    "touchCooldown": "Please wait a moment...",
+    "coinsEarned": "Earned {n} Affection Coins",
+    "shopTitle": "💝 Affection Shop",
+    "shopTabEnergy": "Energy",
+    "shopTabGift": "Gifts",
+    "shopTabBuff": "Buffs",
+    "shopBuy": "Buy",
+    "shopLocked": "Locked",
+    "shopDailyLeft": "Today: {n} left",
+    "shopNeedLevel": "Requires Affection Lv.{n}",
+    "shopPurchased": "Purchase successful!",
+    "shopNotEnoughCoins": "Not enough Affection Coins",
+    "shopDailyLimitReached": "Daily limit reached",
+    "shopCoinBalance": "💰 {n} Coins",
+    "giftSend": "Gift",
+    "giftSent": "Gave {gift} to {name}! Affection +{n}",
+    "touchDailyMax": "Daily touch limit reached",
+    "detailTitle": "{name}'s Affection",
+    "touchBtn": "👋 Interact",
+    "shopBtn": "💝 Shop",
+    "giftBtn": "🎁 Gift"
+  },
   "game_complete": {
     "emoji": "👑",
     "title": "Congratulations!",

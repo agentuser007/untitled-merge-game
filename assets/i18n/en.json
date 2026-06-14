@@ -12,6 +12,9 @@
     "orderFailPlayer": "(Sigh, gotta be faster next time…)",
     "diamondReward": "💎 +{count} Diamonds"
   },
+  "board": {
+    "canMerge": "You can still merge!"
+  },
   "currency": {
     "luckyCoinBoost": "🍀 Lucky Coin Boost! {count} remaining"
   },
@@ -23,7 +26,7 @@
     "chainFood": "Gourmet Series",
     "tabItems": "Item Album",
     "tabGacha": "Card Album",
-    "tabFragments": "Fragments",
+    "tabFragments": "Memory Hall",
     "raritySSR": "👑 SSR Legendary",
     "raritySR": "💜 SR Rare",
     "rarityR": "💙 R Common",
@@ -46,16 +49,27 @@
     "chainCompleteBadge": "✅ Complete",
     "rewardDiamonds": "💎+{amount}",
     "rewardEnergy": "⚡+{amount}",
-    "rewardGold": "🪙+{amount}"
+    "rewardGold": "🪙+{amount}",
+    "filterAll": "All",
+    "memoryCorridor": "Memory Hall",
+    "chapterUnlocked": "✅ Unlocked",
+    "chapterCanUnlock": "🔓 Unlockable",
+    "chapterLocked": "🔒 Locked",
+    "unlockStoryBtn": "✨ Unlock ({cost}🧩)",
+    "reviewStoryBtn": "📖 Review",
+    "allChaptersUnlocked": "✅ All chapters unlocked",
+    "needFragments": "Need {cost} fragments",
+    "canUnlockHint": "✨ Unlockable",
+    "chaptersCount": "📖 {current}/{total} chapters"
   },
   "dailyOrder": {
     "panelTitle": "Daily Errands",
     "panelSub": "Submit items to earn coins",
     "submit": "Submit",
-    "fulfill": "Submit",
     "completed": "✅ Done",
     "refreshed": "New daily orders refreshed!",
-    "orderComplete": "Order Complete!"
+    "orderComplete": "Order Complete!",
+    "fulfill": "Fulfill"
   },
   "dialogue": {
     "tapContinue": "Continue ▸"
@@ -98,21 +112,15 @@
     "luckyMerge": "Lucky Merge",
     "luckyMergeDesc": "Chance to skip a level when merging"
   },
-  "game_complete": {
-    "emoji": "👑",
-    "title": "🎉 Victory! 🎉",
-    "subtitle": "You are the eternal Queen of Hearts!",
-    "button": "🔄 Play Again"
-  },
   "gacha": {
-    "panelTitle": "Gacha Machine",
     "modalTitle": "Gacha Machine",
     "hint": "✨ Spend diamonds to draw random items!",
-    "singlePull": "Single",
     "singlePullLabel": "Single",
-    "tenPull": "×10 Pull",
     "tenPullLabel": "×10 Pull",
-    "freePull": "🎥 Free"
+    "panelTitle": "Gacha",
+    "singlePull": "Pull x1",
+    "tenPull": "Pull x10",
+    "freePull": "Free Pull"
   },
   "heroine": {
     "panelTitle": "Heroine Training",
@@ -226,7 +234,6 @@
     "celebrateEmojis": "🎉,🥳,💖,✨,🌟,🎊"
   },
   "gameTitle": "Heartbeat Merge: Queen of Hearts",
-  "loading": "Loading...",
   "loop": {
     "rewardBadge": "Reward x{multiplier}",
     "newStart": "A New Beginning!",
@@ -350,5 +357,12 @@
     "skipActive": "⏹ Skipping",
     "end": "—— End ——",
     "chapterEnded": "Chapter ended. Tap anywhere to return"
+  },
+  "loading": "Loading...",
+  "game_complete": {
+    "emoji": "👑",
+    "title": "Congratulations!",
+    "subtitle": "You are the eternal Queen!",
+    "button": "Play Again"
   }
 }

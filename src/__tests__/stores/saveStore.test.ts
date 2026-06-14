@@ -15,13 +15,18 @@ describe('saveStore — H2: old saves auto-deleted on version mismatch', () => {
     expect(store.loadAll()).toBe(false)
   })
 
-  it('H2: loadAll clears all saves when meta version mismatches', () => {
+  it('H2: loadAll migrates old-version saves', () => {
     localStorage.setItem('heartbeat_merge_meta', JSON.stringify({ version: 1, timestamp: 0 }))
     localStorage.setItem('heartbeat_merge_run', JSON.stringify({ version: 1, timestamp: 0 }))
     const result = store.loadAll()
+    expect(result).toBe(true)
+  })
+
+  it('H2: loadAll clears future-version saves', () => {
+    localStorage.setItem('heartbeat_merge_meta', JSON.stringify({ version: 99, timestamp: 0 }))
+    localStorage.setItem('heartbeat_merge_run', JSON.stringify({ version: 99, timestamp: 0 }))
+    const result = store.loadAll()
     expect(result).toBe(false)
-    expect(localStorage.getItem('heartbeat_merge_meta')).toBeNull()
-    expect(localStorage.getItem('heartbeat_merge_run')).toBeNull()
   })
 
   it('loadAll returns true for valid current-version save', () => {

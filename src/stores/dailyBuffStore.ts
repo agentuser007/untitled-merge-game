@@ -5,6 +5,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { globalBus } from '../core/EventBus';
+import { BoardService } from '../services/BoardService';
 
 export interface DailyBuff {
     id: string;
@@ -85,14 +86,16 @@ export const useDailyBuffStore = defineStore('dailyBuff', () => {
         activeBuffs.value = [];
         buffFlags.value = {};
 
-        const idx = Math.floor(Math.random() * DAILY_BUFF_TYPES.length);
-        const newBuff = DAILY_BUFF_TYPES[idx];
+        const result = BoardService.resolveDailyBuff({
+            buffTypes: DAILY_BUFF_TYPES,
+            random: Math.random,
+        });
         lastRollDate.value = today;
 
-        pendingBuff.value = newBuff;
+        pendingBuff.value = result.buff;
 
         globalBus.emit('dailyBuff:rolled', {
-            buff: newBuff
+            buff: result.buff
         });
     }
 
@@ -141,13 +144,14 @@ export const useDailyBuffStore = defineStore('dailyBuff', () => {
         };
     }
 
-    function deserialize(data: any) {
+    function deserialize(data: unknown) {
         if (!data) return;
+        const d = data as { activeBuffs?: DailyBuff[]; lastRollDate?: string; buffFlags?: Record<string, boolean>; pendingBuff?: DailyBuff | null };
 
-        activeBuffs.value = data.activeBuffs || [];
-        lastRollDate.value = data.lastRollDate || '';
-        buffFlags.value = data.buffFlags || {};
-        pendingBuff.value = data.pendingBuff || null;
+        activeBuffs.value = d.activeBuffs || [];
+        lastRollDate.value = d.lastRollDate || '';
+        buffFlags.value = d.buffFlags || {};
+        pendingBuff.value = d.pendingBuff || null;
 
         checkBuffExpiry();
         checkDailyReset();

@@ -87,6 +87,7 @@ export function useGameInit() {
             await configStore.loadGameData(locale || i18nStore.locale?.toString());
         } catch (e) {
             console.error('[useGameInit] Failed to load game data', e);
+            return;
         }
 
         // 5. Init audio — preload all SFX
@@ -137,6 +138,8 @@ export function useGameInit() {
                     dailyBuffStore.rollDailyBuff();
 
                     // Apply heroine permanent effects to energy
+                    // Reset to base first to avoid stacking bonuses from saved state
+                    energyStore.resetToBase();
                     applyHeroineEffectsToEnergy();
 
                     gameReady.value = true;
@@ -197,6 +200,10 @@ export function useGameInit() {
         boardStore.placeInitialGenerators();
         bossStore.loadLevel(0);
 
+        // Set active board to loop 1
+        boardStore.activeBoardLoop = 1;
+        loopStore.loopStatus = 'active';
+
         // Mark game as ready BEFORE showing intro dialogue,
         // so the DialogueOverlay is mounted and user can interact with it
         gameReady.value = true;
@@ -224,9 +231,21 @@ export function useGameInit() {
      * Start a new run for the given loop index.
      * Matches Game.startNewRun() from js/main.js lines 224-248
      */
-    function startNewRun(loopIndex: number) {
+    function startNewRun(loopIdx: number) {
+        // Snapshot the current board before switching (if it hasn't been saved yet)
+        if (!boardStore.boardRegistry.has(loopIdx - 1) && loopIdx > 1) {
+            const prevTitle = loopStore.getLoopTitle(loopIdx - 1);
+            boardStore.snapshotCurrentBoard(
+                loopIdx - 1,
+                'completed',
+                prevTitle,
+                getCharacterIdForLoop(loopIdx - 1),
+                null
+            );
+        }
+
         // Build and apply new loop config
-        const config = loopStore.buildLoopConfig(loopIndex);
+        const config = loopStore.buildLoopConfig(loopIdx);
         loopStore.applyLoopConfig(config);
 
         // Check loop-reached achievements
@@ -240,6 +259,10 @@ export function useGameInit() {
         boardStore.placeInitialGenerators();
         bossStore.loadLevel(0);
 
+        // Update active board loop
+        boardStore.activeBoardLoop = loopIdx;
+        loopStore.loopStatus = 'active';
+
         // Show loop intro narrative
         showLoopIntro();
 
@@ -251,26 +274,62 @@ export function useGameInit() {
     }
 
     /**
-     * Complete the current loop and transition to the next.
-     * Matches Game.completeCurrentLoop() from js/main.js lines 254-275
+     * Complete the current loop — transition to settling phase.
+     * Called when the last boss is defeated.
      */
     function completeCurrentLoop() {
-        const nextLoopIndex = loopStore.loopIndex + 1;
+        // Transition to settling: freeze orders, keep board playable
+        loopStore.transitionToSettling();
 
-        // completeLoop() now calculates and awards loop tokens internally
+        // Freeze daily orders
+        dailyOrderStore.freezeOrders();
+
+        // Snapshot board with settling status
+        const rankTitle = loopStore.getLoopTitle(loopStore.loopIndex);
+        boardStore.snapshotCurrentBoard(
+            loopStore.loopIndex,
+            'settling',
+            rankTitle,
+            getCharacterIdForLoop(loopStore.loopIndex),
+            dailyOrderStore.frozenOrders
+        );
+
+        // Save meta immediately
+        saveStore.saveMeta();
+        saveStore.saveRun();
+    }
+
+    /**
+     * Transition from settling to completed, then show LoopSummary.
+     * Called when player clicks "End this loop" or all daily orders are cleared.
+     */
+    function finishSettlingAndShowSummary() {
+        loopStore.transitionToCompleted();
+
+        // Update snapshot status to completed
+        const rankTitle = loopStore.getLoopTitle(loopStore.loopIndex);
+        boardStore.snapshotCurrentBoard(
+            loopStore.loopIndex,
+            'completed',
+            rankTitle,
+            getCharacterIdForLoop(loopStore.loopIndex),
+            dailyOrderStore.frozenOrders
+        );
+
+        // Calculate and award loop tokens
         loopStore.completeLoop();
 
-        // Save meta immediately (so progress isn't lost even if user closes browser)
+        // Only show LoopSummary if player is viewing the current loop's board
+        if (boardStore.activeBoardLoop === loopStore.loopIndex ||
+            boardStore.activeBoardLoop === loopStore.loopIndex - 1) {
+            const nextLoopIndex = loopStore.loopIndex;
+            loopSummaryNextIndex.value = nextLoopIndex;
+            showLoopSummary.value = true;
+        }
+
+        bus.emit('loop:completed', { loopIndex: loopStore.loopIndex });
         saveStore.saveMeta();
-        // Clear old run data
-        saveStore.clearRun();
-
-        // Show loop summary overlay
-        loopSummaryNextIndex.value = nextLoopIndex;
-        showLoopSummary.value = true;
-
-        // Emit event for cross-store communication
-        bus.emit('loop:completed', { loopIndex: nextLoopIndex });
+        saveStore.saveRun();
     }
 
     /**
@@ -312,7 +371,8 @@ export function useGameInit() {
 
         // Daily orders: update loop index and re-roll
         dailyOrderStore.setLoopIndex(loopStore.loopIndex);
-        dailyOrderStore.rollNewOrders();
+        dailyOrderStore.unfreezeOrders();
+        dailyOrderStore.rollNewOrders(true);
     }
 
     // ============================================================
@@ -328,6 +388,10 @@ export function useGameInit() {
         const bonus = heroineStore.getEffectValue('energy_cap');
         if (bonus && typeof bonus === 'number' && bonus > 0) {
             energyStore.setMax(energyStore.max + bonus);
+        }
+        const regenInterval = heroineStore.getEffectValue('regen_speed');
+        if (regenInterval && typeof regenInterval === 'number' && regenInterval > 0) {
+            energyStore.setRegenInterval(regenInterval);
         }
     }
 
@@ -426,6 +490,16 @@ export function useGameInit() {
     }
 
     /**
+     * Get the character ID associated with a loop index.
+     */
+    function getCharacterIdForLoop(idx: number): string {
+        const bossToChar = configStore.affectionConfig?.bossToCharacter || {};
+        const charIds = Object.values(bossToChar) as string[];
+        if (charIds.length === 0) return 'unknown';
+        return charIds[(idx - 1) % charIds.length] || 'unknown';
+    }
+
+    /**
      * Close the loop summary overlay without starting next loop
      */
     function closeLoopSummary() {
@@ -447,7 +521,7 @@ export function useGameInit() {
     }
 
     onUnmounted(() => {
-        energyStore.destroyLogic();
+        energyStore.stopRegen();
     });
 
     return {
@@ -468,6 +542,7 @@ export function useGameInit() {
         startNewMetaGame,
         startNewRun,
         completeCurrentLoop,
+        finishSettlingAndShowSummary,
         resetRunState,
 
         // Dialogue

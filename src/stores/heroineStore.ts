@@ -7,19 +7,9 @@ import { ref, computed } from 'vue';
 import { globalBus } from '../core/EventBus';
 import { useConfigStore } from './configStore';
 import { useCurrencyStore } from './currencyStore';
-
-export interface HeroineUpgrade {
-    id: string;
-    name: string;
-    description: string;
-    icon: string;
-    levels: Array<{
-        level: number;
-        label: string;
-        cost: number;
-        value: any;
-    }>;
-}
+import { HeroineService } from '../services/HeroineService';
+import type { ResolveResult } from '../services/ServiceResultTypes';
+import type { HeroineUpgrade } from '../types/game';
 
 export const useHeroineStore = defineStore('heroine', () => {
     // --- State ---
@@ -72,33 +62,22 @@ export const useHeroineStore = defineStore('heroine', () => {
     });
 
     // --- Actions ---
-    function purchaseUpgrade(upgradeId: string): boolean {
-        const upg = upgradeList.value.find(u => u.id === upgradeId);
-        if (!upg) return false;
-
-        const currentLevel = upgrades.value[upgradeId];
-        if (currentLevel >= upg.levels.length - 1) return false; // maxed
-
-        const nextLevel = upg.levels[currentLevel + 1];
-
+    function purchaseUpgrade(upgradeId: string): { success: boolean; resolveResult: ResolveResult } {
         const currencyStore = useCurrencyStore();
-        if (!currencyStore.canAffordDiamonds(nextLevel.cost)) return false;
-        currencyStore.spendDiamonds(nextLevel.cost);
-
-        // Level up
-        upgrades.value[upgradeId] = currentLevel + 1;
-
-        // Emit event for effects
-        globalBus.emit('heroine:upgradePurchased', {
-            upgradeId,
-            level: currentLevel + 1,
-            value: nextLevel.value
+        const { success, resolveResult, newLevel } = HeroineService.resolvePurchaseUpgrade(upgradeId, {
+            upgradeList: upgradeList.value,
+            currentLevel: (id) => upgrades.value[id],
+            canAffordDiamonds: (cost) => currencyStore.canAffordDiamonds(cost),
         });
 
-        return true;
+        if (!success) return { success: false, resolveResult };
+
+        upgrades.value[upgradeId] = newLevel!;
+
+        return { success: true, resolveResult };
     }
 
-    function getEffectValue(upgradeId: string): any {
+    function getEffectValue(upgradeId: string): number | null {
         const level = upgrades.value[upgradeId];
         if (level < 0) return null;
         
@@ -157,10 +136,11 @@ export const useHeroineStore = defineStore('heroine', () => {
         };
     }
 
-    function deserialize(data: any) {
+    function deserialize(data: unknown) {
         if (!data) return;
+        const d = data as { upgrades?: Record<string, number> };
         
-        upgrades.value = data.upgrades || {};
+        upgrades.value = d.upgrades || {};
         
         // Ensure all upgrades exist in the state
         for (const upg of upgradeList.value) {

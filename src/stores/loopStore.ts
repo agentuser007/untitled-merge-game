@@ -8,14 +8,17 @@ import { globalBus } from '../core/EventBus';
 import { useConfigStore } from './configStore';
 import { useCollectionStore } from './collectionStore';
 import { useAchievementStore } from './achievementStore';
-import type { MetaUpgrade } from '../types/game';
+import type { MetaUpgrade, LoopStatus, LoopConfig, LoopSpecialRule, LoopSummary } from '../types/game';
+import type { LoopSerializeData } from '../types/serialize';
+import { LoopService } from '../services/LoopService';
 
-export type { MetaUpgrade };
+export type { MetaUpgrade, LoopStatus };
 
 export const useLoopStore = defineStore('loop', () => {
     // --- State ---
     const loopIndex = ref(1);           // Current loop number (1-based)
     const loopTokens = ref(0);          // Permanent currency: 学园声望
+    const loopStatus = ref<LoopStatus>('active');
     const metaUpgrades = ref<MetaUpgrade>({
         startingGold: 0,
         startingDiamonds: 0,
@@ -56,7 +59,7 @@ export const useLoopStore = defineStore('loop', () => {
         };
     }
 
-    function applyLoopConfig(config: any) {
+    function applyLoopConfig(config: LoopConfig) {
         currentLoopConfig.value = config;
         loopIndex.value = config.loopIndex;
     }
@@ -103,7 +106,7 @@ export const useLoopStore = defineStore('loop', () => {
         return rule?.title || `学园轮回 ${loopIndexParam}`;
     }
 
-    function getSpecialRules(loopIndexParam: number): any[] {
+    function getSpecialRules(loopIndexParam: number): LoopSpecialRule[] {
         const configStore = useConfigStore();
         const rule = configStore.loopRules[String(loopIndexParam)];
         return rule?.specialRules || [];
@@ -113,7 +116,7 @@ export const useLoopStore = defineStore('loop', () => {
         return `loop_${loopIndexParam}`;
     }
 
-    function calculateLoopRewards(loopIndexParam: number, summary: any) {
+    function calculateLoopRewards(loopIndexParam: number, summary: LoopSummary) {
         const baseReward = getLoopTokenReward(loopIndexParam);
         let bonusTokens = 0;
 
@@ -223,17 +226,44 @@ export const useLoopStore = defineStore('loop', () => {
         return currentLoopConfig.value?.specialRules?.includes(rule) ?? false;
     }
 
+    function transitionToSettling(): void {
+        if (loopStatus.value !== 'active') return;
+        loopStatus.value = 'settling';
+        globalBus.emit('loop:settling', { loopIndex: loopIndex.value });
+    }
+
+    function transitionToCompleted(): void {
+        if (loopStatus.value !== 'settling') return;
+        loopStatus.value = 'completed';
+    }
+
+    function syncLoopStatus(status: LoopStatus): void {
+        loopStatus.value = status;
+    }
+
     function completeLoop(): void {
         const collectionStore = useCollectionStore();
         const achievementStore = useAchievementStore();
-        const rewards = calculateLoopRewards(loopIndex.value, {
-            newDiscoveries: collectionStore.getNewDiscoveriesCountThisLoop(),
-            achievementsUnlocked: achievementStore.getUnlockedCountThisLoop()
+        const configStore = useConfigStore();
+        const result = LoopService.resolveCompleteLoop({
+            loopIndex: loopIndex.value,
+            getNewDiscoveriesCountThisLoop: () => collectionStore.getNewDiscoveriesCountThisLoop(),
+            getUnlockedCountThisLoop: () => achievementStore.getUnlockedCountThisLoop(),
+            getLoopTokenReward: getLoopTokenReward,
+            achievementTokenBonus: configStore.boardEconomy.achievementTokenBonus,
         });
-        loopTokens.value += rewards.loopTokens ?? rewards.baseTokens ?? 0;
-        loopIndex.value++;
-        collectionStore.resetLoopDiscoveries();
-        achievementStore.resetLoopAchievements();
+
+        if (result.applyTo.loop?.incrementLoopIndex) {
+            const inc = result.applyTo.loop.incrementLoopIndex;
+            if (inc.addLoopTokens) loopTokens.value += inc.addLoopTokens;
+            loopIndex.value++;
+        }
+        if (result.applyTo.collection?.resetLoopDiscoveries) {
+            collectionStore.resetLoopDiscoveries();
+        }
+        if (result.applyTo.achievement?.resetLoopAchievements) {
+            achievementStore.resetLoopAchievements();
+        }
     }
 
     // --- Serialization ---
@@ -241,31 +271,35 @@ export const useLoopStore = defineStore('loop', () => {
         return {
             loopIndex: loopIndex.value,
             loopTokens: loopTokens.value,
+            loopStatus: loopStatus.value,
             metaUpgrades: { ...metaUpgrades.value },
             currentLoopConfig: currentLoopConfig.value ? { ...currentLoopConfig.value } : null,
             unlockedNarrativeFlags: [...unlockedNarrativeFlags.value]
         };
     }
 
-    function deserialize(data: any) {
+    function deserialize(data: unknown) {
         if (!data) return;
+        const d = data as LoopSerializeData;
         
-        loopIndex.value = data.loopIndex ?? 1;
-        loopTokens.value = data.loopTokens ?? 0;
-        metaUpgrades.value = data.metaUpgrades || {
+        loopIndex.value = d.loopIndex ?? 1;
+        loopTokens.value = d.loopTokens ?? 0;
+        loopStatus.value = d.loopStatus || 'active';
+        metaUpgrades.value = d.metaUpgrades || {
             startingGold: 0,
             startingDiamonds: 0,
             startingEnergy: 0,
             dailyBonus: 0
         };
-        currentLoopConfig.value = data.currentLoopConfig || null;
-        unlockedNarrativeFlags.value = data.unlockedNarrativeFlags || [];
+        currentLoopConfig.value = d.currentLoopConfig || null;
+        unlockedNarrativeFlags.value = d.unlockedNarrativeFlags || [];
     }
 
     return {
         // State
         loopIndex,
         loopTokens,
+        loopStatus,
         metaUpgrades,
         currentLoopConfig,
         unlockedNarrativeFlags,
@@ -297,6 +331,9 @@ export const useLoopStore = defineStore('loop', () => {
         unlockNarrativeFlag,
         hasNarrativeFlag,
         hasRule,
+        transitionToSettling,
+        transitionToCompleted,
+        syncLoopStatus,
         completeLoop,
         
         // Serialization

@@ -1,29 +1,48 @@
 <template>
-  <div id="main-quest-card" class="quest-card" :class="{ ready: canSubmit }">
+  <div v-if="showCard" id="main-quest-card" class="quest-card" :class="{ ready: canSubmit }" @click="openHeroineDetails">
+    <!-- Reward bubble floating above -->
+    <div class="order-reward-bubble">
+      <div class="reward-row">
+        <span class="reward-icon">💎</span>
+        <span class="reward-amount">+{{ bossReward }}</span>
+      </div>
+      <div class="reward-row">
+        <span class="reward-icon">❤️</span>
+        <span class="reward-amount">+{{ affectionReward }}</span>
+      </div>
+    </div>
+
+    <!-- Boss/Heroine Portrait -->
     <div id="boss-portrait" :style="portraitStyle">
       <div id="boss-blush"></div>
     </div>
+
+    <!-- Card Body -->
     <div class="quest-card-body">
       <div class="quest-card-header-row">
         <div id="boss-header-name">
           <span id="boss-name">{{ bossStore.bossName }}</span>
+          <span class="boss-heart-icon">❤️</span>
         </div>
         <div class="hp-bar-container">
           <div id="hp-bar-fill" :style="hpBarStyle"></div>
         </div>
       </div>
+      
       <div class="quest-card-items-row">
         <div class="quest-card-items" id="order-items">
-          <div v-for="req in currentOrderRequired" :key="req.itemId" class="order-item-tag">
-            {{ req.emoji }} ×{{ req.count }}
+          <div 
+            v-for="(slot, idx) in expandedRequiredSlots" 
+            :key="idx" 
+            class="order-item-slot" 
+            :class="{ fulfilled: slot.fulfilled }"
+          >
+            <span class="slot-emoji">{{ slot.emoji }}</span>
           </div>
         </div>
       </div>
+      
       <button class="submit-order-btn" :disabled="!canSubmit" @click.stop="onSubmit">提交</button>
-    </div>
-    <div class="order-reward-bubble">
-      <span class="reward-diamond">💎</span>
-      <span class="reward-amount">+{{ bossReward }}</span>
     </div>
   </div>
 </template>
@@ -34,11 +53,33 @@ import { useBossStore } from '../../stores/bossStore';
 import { useBoardStore } from '../../stores/boardStore';
 import { useConfigStore } from '../../stores/configStore';
 import { useCurrencyStore } from '../../stores/currencyStore';
+import { useInventoryStore } from '../../stores/inventoryStore';
+import { useLoopStore } from '../../stores/loopStore';
+import { useSaveStore } from '../../stores/saveStore';
+import { useSheet } from '../../composables/useSheet';
+
+interface OrderSlot {
+  itemId: string;
+  emoji: string;
+  fulfilled: boolean;
+}
 
 const bossStore = useBossStore();
 const boardStore = useBoardStore();
 const configStore = useConfigStore();
 const currencyStore = useCurrencyStore();
+const inventoryStore = useInventoryStore();
+const loopStore = useLoopStore();
+const saveStore = useSaveStore();
+const heroineSheet = useSheet('heroine-sheet');
+
+const showCard = computed(() => {
+  return loopStore.loopStatus === 'active';
+});
+
+const openHeroineDetails = () => {
+  heroineSheet.open();
+};
 
 const portraitStyle = computed(() => {
   return {
@@ -70,13 +111,31 @@ const currentOrderRequired = computed(() => {
   });
 });
 
+const expandedRequiredSlots = computed(() => {
+  const slots: OrderSlot[] = [];
+  currentOrderRequired.value.forEach(req => {
+    const ownedCells = boardStore.findAllItems(req.itemId);
+    const backpackCount = inventoryStore.slots[req.itemId] || 0;
+    const totalOwned = ownedCells.length + backpackCount;
+    for (let i = 0; i < req.count; i++) {
+      slots.push({
+        itemId: req.itemId,
+        emoji: req.emoji,
+        fulfilled: i < totalOwned
+      });
+    }
+  });
+  return slots;
+});
+
 const canSubmit = computed(() => {
   if (bossStore.orders.length === 0) return false;
   const order = bossStore.orders[0];
   if (!order?.required) return false;
   for (const req of order.required) {
-    const found = boardStore.findAllItems(req.itemId);
-    if (found.length < req.count) return false;
+    const boardCount = boardStore.findAllItems(req.itemId).length;
+    const backpackCount = inventoryStore.slots[req.itemId] || 0;
+    if (boardCount + backpackCount < req.count) return false;
   }
   return true;
 });
@@ -84,7 +143,13 @@ const canSubmit = computed(() => {
 const bossReward = computed(() => {
   if (bossStore.orders.length === 0) return 0;
   const order = bossStore.orders[0];
-  return order?.diamondReward || order?.damage || 10;
+  return order?.diamondReward ?? (order?.damage ?? 10);
+});
+
+const affectionReward = computed(() => {
+  if (bossStore.orders.length === 0) return 10;
+  const order = bossStore.orders[0];
+  return order?.affectionReward ?? 10;
 });
 
 const onSubmit = () => {
@@ -93,9 +158,15 @@ const onSubmit = () => {
   if (!order?.required) return;
 
   for (const req of order.required) {
+    let remaining = req.count;
     const cellIndices = boardStore.findAllItems(req.itemId);
-    for (let i = 0; i < req.count && i < cellIndices.length; i++) {
+    const boardConsume = Math.min(remaining, cellIndices.length);
+    for (let i = 0; i < boardConsume; i++) {
       boardStore.clearCell(cellIndices[i]);
+    }
+    remaining -= boardConsume;
+    if (remaining > 0) {
+      inventoryStore.removeItem(req.itemId, remaining);
     }
   }
 
@@ -105,6 +176,7 @@ const onSubmit = () => {
   }
 
   bossStore.submitOrder(order.damage || 10);
+  saveStore.saveAll();
 };
 </script>
 
@@ -151,10 +223,6 @@ const onSubmit = () => {
   flex-shrink: 0;
 }
 
-#boss-portrait.boss-shake {
-  animation: boss-shake 0.5s ease;
-}
-
 #boss-blush {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
@@ -169,7 +237,7 @@ const onSubmit = () => {
   flex-direction: column !important;
   align-items: stretch !important;
   justify-content: center !important;
-  gap: 0.5cqw !important;
+  gap: 1.5cqw !important;
   width: 100% !important;
   margin-top: 0.5cqw !important;
   margin-left: 0 !important;
@@ -178,47 +246,53 @@ const onSubmit = () => {
   backdrop-filter: blur(7.3px) !important;
   -webkit-backdrop-filter: blur(7.3px) !important;
   border: 1px solid var(--reward-bubble-border) !important;
-  border-radius: 6px !important;
-  padding: 0.5cqw 0.5cqw 0.5cqw 1cqw !important;
+  border-radius: 10px !important;
+  padding: 1.5cqw 1.5cqw 1.5cqw 1.5cqw !important;
   box-sizing: border-box !important;
   height: auto !important;
   min-height: 5cqw !important;
   transition: background 0.2s ease, box-shadow 0.2s ease;
   position: relative !important;
   z-index: 61 !important;
-  box-shadow: 0px 3px 3.7px rgba(0, 0, 0, 0.6);
+  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.4);
 }
 
 #main-quest-card.ready .quest-card-body {
   background: rgba(255, 255, 255, 0.4) !important;
-  border-color: #ff6584 !important;
+  border-color: var(--accent-pink) !important;
   box-shadow: 0 0 10px rgba(255, 101, 132, 0.4) !important;
 }
 
 .quest-card-header-row {
   display: flex;
   align-items: center;
-  gap: 1cqw;
+  gap: 1.5cqw;
   width: 100%;
 }
 
 #boss-header-name {
   background: var(--name-tag-bg) !important;
-  border-radius: 7px !important;
+  border-radius: 12px !important;
   padding: 3px 8px !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  gap: 3px;
 }
 
 #boss-name {
   font-size: 11px !important;
-  font-weight: 500;
+  font-weight: 700;
   color: var(--name-tag-text) !important;
   white-space: nowrap;
   font-family: 'Jiangcheng Yuanti', sans-serif;
+}
+
+.boss-heart-icon {
+  font-size: 10px;
+  line-height: 1;
 }
 
 .hp-bar-container {
@@ -252,92 +326,106 @@ const onSubmit = () => {
 
 .quest-card-items {
   display: flex !important;
-  gap: 1cqw !important;
+  gap: 1.5cqw !important;
   align-items: center !important;
   justify-content: center !important;
+  flex-wrap: wrap !important;
   flex: 0 1 auto !important;
   min-width: 0 !important;
   margin: 0.5cqw !important;
 }
 
-.order-item-tag {
-  width: 5.5cqw !important;
-  height: 5.5cqw !important;
-  border-radius: 5px !important;
-  background: #FFA1C9 !important;
-  border: 1px solid var(--surface-muted) !important;
+.order-item-slot {
+  width: 9.5cqw !important;
+  height: 9.5cqw !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  border-radius: 8px !important;
+  background: rgba(90, 62, 43, 0.25) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   flex-shrink: 0 !important;
   position: relative !important;
-  box-shadow: none !important;
-  font-size: 2.5cqw;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2) !important;
 }
 
-.order-reward-bubble {
-  position: absolute;
-  top: 37%;
-  right: -14cqw;
-  background: var(--reward-bubble-bg);
-  border-radius: 6px;
-  padding: 2px 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  box-shadow: 0px 4px 5.1px rgba(0, 0, 0, 0.81);
-  z-index: 62;
-}
-
-.reward-diamond {
-  font-size: 8px;
+.slot-emoji {
+  font-size: 18px !important;
   line-height: 1;
 }
 
-.reward-amount {
-  font-size: 8px;
-  font-weight: 700;
-  color: #fff;
-  line-height: 1;
+.order-item-slot.fulfilled {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: var(--color-success) !important;
 }
 
-.order-item-tag.fulfilled {
-  background: var(--highlight-pink) !important;
-  border-color: var(--surface-muted) !important;
-  box-shadow: none !important;
-  overflow: visible !important;
-}
-
-.order-item-tag.fulfilled::after {
+.order-item-slot.fulfilled::after {
   content: '✓';
   position: absolute;
-  bottom: -0.6cqw;
-  right: -0.6cqw;
+  bottom: -3px;
+  right: -3px;
   background: var(--color-success) !important;
   color: white !important;
-  font-size: 1.6cqw !important;
+  font-size: 8px !important;
   font-weight: 900 !important;
-  width: 2.2cqw !important;
-  height: 2.2cqw !important;
+  width: 14px !important;
+  height: 14px !important;
   border-radius: 50% !important;
-  border: 1px solid #F5F5FA !important;
+  border: 1px solid var(--text-primary) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   box-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
   pointer-events: none;
   z-index: 10 !important;
+  line-height: 1;
+}
+
+.order-reward-bubble {
+  position: absolute;
+  top: -12cqw;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--reward-bubble-bg);
+  border-radius: 8px;
+  padding: 4px 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.4);
+  z-index: 62;
+}
+
+.reward-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.reward-icon {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.reward-amount {
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--text-primary);
+  line-height: 1;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .submit-order-btn {
-  background: linear-gradient(135deg, #F35683, #ff6584);
+  background: linear-gradient(135deg, var(--accent-pink), #ff7f9e);
   border: none;
-  border-radius: 6px;
-  padding: 1cqw 2cqw;
-  font-size: 10px;
+  border-radius: 8px;
+  padding: 1.5cqw 3cqw;
+  font-size: 11px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   cursor: pointer;
   font-family: 'Jiangcheng Yuanti', sans-serif;
   box-shadow: 0px 2px 4px rgba(243, 86, 131, 0.4);
@@ -353,8 +441,5 @@ const onSubmit = () => {
   opacity: 0.4;
   cursor: not-allowed;
 }
-
-.quest-card.timer-warning {
-  animation: timer-flash 0.5s infinite;
-}
 </style>
+

@@ -1,0 +1,10 @@
+{
+  "orderTierBoost": [
+    { "maxLoop": 1, "boost": 0 },
+    { "maxLoop": 3, "boost": 1 },
+    { "maxLoop": 5, "boost": 2 },
+    { "maxLoop": 7, "boost": 3 },
+    { "maxLoop": null, "boost": 4 }
+  ],
+  "maxItemTier": 8
+}

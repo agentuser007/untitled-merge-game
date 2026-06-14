@@ -25,6 +25,7 @@
         </div>
         <button
           class="shop-buy-btn"
+          :class="{ affordable: currencyStore.gold >= item.cost }"
           :disabled="currencyStore.gold < item.cost"
           @click="buyItem(item)"
         >
@@ -42,20 +43,17 @@ import { useConfigStore } from '../../stores/configStore'
 import { useCurrencyStore } from '../../stores/currencyStore'
 import { useI18nStore } from '../../stores/i18nStore'
 import { globalBus } from '../../core/EventBus'
+import type { GachaPoolItemValue } from '../../types/game'
 
 const { isOpen } = useSheet('shop-sheet')
 const configStore = useConfigStore()
 const currencyStore = useCurrencyStore()
 const i18nStore = useI18nStore()
 
-function buyItem(item: { id: string; cost: number; effect: string; value: any }) {
+function buyItem(item: { id: string; cost: number; effect: string; value: GachaPoolItemValue }) {
   if (currencyStore.gold < item.cost) return
-  currencyStore.spendGold(item.cost)
-  try {
-    globalBus.emit('shop:itemPurchased', { item })
-  } catch (e) {
-    currencyStore.addGold(item.cost)
-  }
+  if (!currencyStore.spendGold(item.cost)) return
+  globalBus.emit('shop:itemPurchased', { item })
 }
 </script>
 
@@ -141,10 +139,4 @@ function buyItem(item: { id: string; cost: number; effect: string; value: any })
   transform: scale(0.93);
 }
 
-/* ---- Sheet Section Divider ---- */
-.sheet-section-divider {
-  height: 1px;
-  margin: 12px 16px;
-  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
-}
 </style>

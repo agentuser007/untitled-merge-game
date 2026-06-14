@@ -1,0 +1,146 @@
+{
+  "zones": [
+    { "id": "hair", "name": "头顶", "icon": "👋", "unlockLevel": 0 },
+    { "id": "shoulder", "name": "肩膀", "icon": "🤝", "unlockLevel": 0 },
+    { "id": "cheek", "name": "脸颊", "icon": "🫳", "unlockLevel": 1 },
+    { "id": "handBack", "name": "手背", "icon": "✋", "unlockLevel": 1 }
+  ],
+  "responses": {
+    "morven": {
+      "hair": {
+        "0": { "dialogue": "……别碰。", "affection": 1, "animation": "pull_back" },
+        "1": { "dialogue": "你……在干什么？", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "……算了，随你。", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "只有你可以这样。", "affection": 4, "animation": "soft_smile" },
+        "4": { "dialogue": "……再摸一下。", "affection": 5, "animation": "close_eyes" },
+        "5": { "dialogue": "你的手……很暖。", "affection": 8, "animation": "lean_in" }
+      },
+      "shoulder": {
+        "0": { "dialogue": "（微微侧身避开）", "affection": 1, "animation": "pull_back" },
+        "1": { "dialogue": "……没躲。", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "你的手……还挺稳的。", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "靠过来一点也行。", "affection": 4, "animation": "soft_smile" },
+        "4": { "dialogue": "……肩膀借你。", "affection": 5, "animation": "close_eyes" },
+        "5": { "dialogue": "别松开。", "affection": 8, "animation": "lean_in" }
+      },
+      "cheek": {
+        "0": { "dialogue": "🔒", "affection": 0, "animation": "locked" },
+        "1": { "dialogue": "你手很凉。", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "……别在别人面前这样。", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "只有你可以。", "affection": 5, "animation": "soft_smile" },
+        "4": { "dialogue": "……再碰一下。", "affection": 6, "animation": "close_eyes" },
+        "5": { "dialogue": "你的温度……我记住了。", "affection": 8, "animation": "lean_in" }
+      },
+      "handBack": {
+        "0": { "dialogue": "🔒", "affection": 0, "animation": "locked" },
+        "1": { "dialogue": "……干嘛碰我手。", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "你的手……比我想的小。", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "可以……再握一会儿。", "affection": 5, "animation": "soft_smile" },
+        "4": { "dialogue": "别松手。", "affection": 6, "animation": "close_eyes" },
+        "5": { "dialogue": "你的手……很暖。", "affection": 8, "animation": "lean_in" }
+      }
+    },
+    "daniel": {
+      "hair": {
+        "0": { "dialogue": "Hey！你干嘛！", "affection": 1, "animation": "pull_back" },
+        "1": { "dialogue": "哈哈，你胆子挺大啊！", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "哈哈，再摸啊！", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "你的手好适合放这。", "affection": 4, "animation": "soft_smile" },
+        "4": { "dialogue": "……别停。", "affection": 5, "animation": "close_eyes" },
+        "5": { "dialogue": "只让你一个人碰。", "affection": 8, "animation": "lean_in" }
+      },
+      "shoulder": {
+        "0": { "dialogue": "哇，突然拍我？", "affection": 1, "animation": "pull_back" },
+        "1": { "dialogue": "嘿嘿，你手劲不错！", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "随时可以靠过来哦！", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "……你的手好暖。", "affection": 4, "animation": "soft_smile" },
+        "4": { "dialogue": "再靠近一点嘛。", "affection": 5, "animation": "close_eyes" },
+        "5": { "dialogue": "就这样，别动。", "affection": 8, "animation": "lean_in" }
+      },
+      "cheek": {
+        "0": { "dialogue": "🔒", "affection": 0, "animation": "locked" },
+        "1": { "dialogue": "我的脸很好看对吧？", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "嘿嘿，被迷住了？", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "……别停。", "affection": 5, "animation": "soft_smile" },
+        "4": { "dialogue": "你的手……好软。", "affection": 6, "animation": "close_eyes" },
+        "5": { "dialogue": "只给你一个人碰。", "affection": 8, "animation": "lean_in" }
+      },
+      "handBack": {
+        "0": { "dialogue": "🔒", "affection": 0, "animation": "locked" },
+        "1": { "dialogue": "来，击个掌！", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "你的手好小啊！", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "这次不击掌了……", "affection": 5, "animation": "soft_smile" },
+        "4": { "dialogue": "……握紧了。", "affection": 6, "animation": "close_eyes" },
+        "5": { "dialogue": "我手心在出汗……因为你。", "affection": 8, "animation": "lean_in" }
+      }
+    },
+    "vincent": {
+      "hair": {
+        "0": { "dialogue": "这不合规矩。", "affection": 1, "animation": "pull_back" },
+        "1": { "dialogue": "……仅此一次。", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "下不为例……大概。", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "你是我唯一的例外。", "affection": 4, "animation": "soft_smile" },
+        "4": { "dialogue": "……可以再久一点。", "affection": 5, "animation": "close_eyes" },
+        "5": { "dialogue": "规矩因你而改。", "affection": 8, "animation": "lean_in" }
+      },
+      "shoulder": {
+        "0": { "dialogue": "请保持距离。", "affection": 1, "animation": "pull_back" },
+        "1": { "dialogue": "……算了。", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "仅限此时此地。", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "……可以。", "affection": 4, "animation": "soft_smile" },
+        "4": { "dialogue": "肩膀给你，不算违规。", "affection": 5, "animation": "close_eyes" },
+        "5": { "dialogue": "所有规则在你面前都多一条注释。", "affection": 8, "animation": "lean_in" }
+      },
+      "cheek": {
+        "0": { "dialogue": "🔒", "affection": 0, "animation": "locked" },
+        "1": { "dialogue": "注意分寸。", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "……但没躲。", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "分寸……对你不适用。", "affection": 5, "animation": "soft_smile" },
+        "4": { "dialogue": "……轻一点。", "affection": 6, "animation": "close_eyes" },
+        "5": { "dialogue": "我从未为任何人破例。", "affection": 8, "animation": "lean_in" }
+      },
+      "handBack": {
+        "0": { "dialogue": "🔒", "affection": 0, "animation": "locked" },
+        "1": { "dialogue": "这是工作场合。", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "……没放手。", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "规矩改了——因为你。", "affection": 5, "animation": "soft_smile" },
+        "4": { "dialogue": "……握紧了。", "affection": 6, "animation": "close_eyes" },
+        "5": { "dialogue": "我从未为任何人破例。", "affection": 8, "animation": "lean_in" }
+      }
+    },
+    "leo": {
+      "hair": {
+        "0": { "dialogue": "喂！你手不干净吧！", "affection": 1, "animation": "pull_back" },
+        "1": { "dialogue": "……哼，就一下。", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "别弄乱我头发！", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "……算了，随你。", "affection": 4, "animation": "soft_smile" },
+        "4": { "dialogue": "……再碰就收不回来了。", "affection": 5, "animation": "close_eyes" },
+        "5": { "dialogue": "笨蛋……别停。", "affection": 8, "animation": "lean_in" }
+      },
+      "shoulder": {
+        "0": { "dialogue": "干嘛突然碰我！", "affection": 1, "animation": "pull_back" },
+        "1": { "dialogue": "……手拿开。才怪。", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "哼，肩膀酸了不关我事。", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "……就一会儿。", "affection": 4, "animation": "soft_smile" },
+        "4": { "dialogue": "别、别松手啊笨蛋。", "affection": 5, "animation": "close_eyes" },
+        "5": { "dialogue": "……你的手好暖。才不是在夸你。", "affection": 8, "animation": "lean_in" }
+      },
+      "cheek": {
+        "0": { "dialogue": "🔒", "affection": 0, "animation": "locked" },
+        "1": { "dialogue": "你、你干嘛啊！", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "别碰脸！……好吧。", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "……笨蛋，别看。", "affection": 5, "animation": "soft_smile" },
+        "4": { "dialogue": "我、我才没红……", "affection": 6, "animation": "close_eyes" },
+        "5": { "dialogue": "……只有你。才不会让别人碰。", "affection": 8, "animation": "lean_in" }
+      },
+      "handBack": {
+        "0": { "dialogue": "🔒", "affection": 0, "animation": "locked" },
+        "1": { "dialogue": "别碰我手！……好吧。", "affection": 2, "animation": "surprise" },
+        "2": { "dialogue": "你的手……怎么这么小。", "affection": 3, "animation": "look_away" },
+        "3": { "dialogue": "……握着就握着吧。", "affection": 5, "animation": "soft_smile" },
+        "4": { "dialogue": "我、我才没紧张……", "affection": 6, "animation": "close_eyes" },
+        "5": { "dialogue": "笨蛋……别松手。", "affection": 8, "animation": "lean_in" }
+      }
+    }
+  }
+}

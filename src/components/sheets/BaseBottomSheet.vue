@@ -1,51 +1,63 @@
 <!-- ============================================================
-     BaseBottomSheet.vue — Shared base component for all bottom sheets
-     ============================================================
-     Handles: slide-up animation, drag handle + swipe-to-close,
-     backdrop click to close, body scroll lock
+     BaseBottomSheet.vue — Shared base component for all sheets
      ============================================================ -->
 <template>
-    <Transition name="sheet-backdrop">
-      <div v-if="modelValue" class="bottom-sheet-backdrop" @click="close" />
-    </Transition>
-    <Transition name="sheet-slide">
-      <div
-        v-if="modelValue"
-        :id="sheetId"
-        class="bottom-sheet"
-        @touchstart="onTouchStart"
-        @touchmove="onTouchMove"
-        @touchend="onTouchEnd"
-      >
-        <div class="sheet-drag-handle" />
-        <div class="sheet-header">
-          <div class="sheet-header-left">
-            <span class="sheet-header-icon">{{ icon }}</span>
-            <span>{{ title }}</span>
-          </div>
-          <button class="sheet-close" @click="close">✕</button>
+  <Transition name="sheet-backdrop">
+    <div
+      v-if="modelValue"
+      class="bottom-sheet-backdrop"
+      :class="{ 'layout-bottom': layout === 'bottom' }"
+      @click="close"
+    />
+  </Transition>
+  <Transition name="sheet-slide">
+    <div
+      v-if="modelValue"
+      :id="sheetId"
+      class="bottom-sheet"
+      :class="{ 'layout-bottom': layout === 'bottom', 'theme-warm': theme === 'warm' }"
+      @touchstart="onTouchStart"
+      @touchmove="onTouchMove"
+      @touchend="onTouchEnd"
+    >
+      <div class="sheet-header-new">
+        <button class="sheet-back-btn sheet-close" @click="close">↩</button>
+        <div class="sheet-title-pill">
+          <span v-if="icon" class="sheet-title-icon">{{ icon }}</span>
+          <span class="sheet-title-text">{{ title }}</span>
         </div>
-        <div v-if="subtitle" class="sheet-sub">{{ subtitle }}</div>
-        <div class="sheet-body">
-          <slot />
-        </div>
+        <button class="sheet-help-btn" @click="emit('help')">?</button>
       </div>
-    </Transition>
-  </template>
+      <div v-if="subtitle" class="sheet-sub">{{ subtitle }}</div>
+      <div class="sheet-body">
+        <slot />
+      </div>
+    </div>
+  </Transition>
+</template>
 
 <script setup lang="ts">
 import { watch, ref } from 'vue'
 
-const props = defineProps<{
-  modelValue: boolean
-  sheetId: string
-  title: string
-  icon: string
-  subtitle?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean
+    sheetId: string
+    title: string
+    icon: string
+    subtitle?: string
+    layout?: 'center' | 'bottom'
+    theme?: 'default' | 'warm'
+  }>(),
+  {
+    layout: 'center',
+    theme: 'default'
+  }
+)
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
+  'update:modelValue': [value: boolean],
+  'help': []
 }>()
 
 // --- Close ---
@@ -96,93 +108,89 @@ watch(
 .bottom-sheet-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(90, 62, 43, 0.35);
-  z-index: 199;
+  background: rgba(90, 62, 43, 0.45);
+  z-index: var(--z-sheet);
   opacity: 1;
   pointer-events: auto;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 /* ---- Bottom Sheet ---- */
 .bottom-sheet {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  height: 90%;
-  background: var(--cream);
-  z-index: 200;
-  border-radius: 20px 20px 0 0;
-  box-shadow: 0 -4px 20px rgba(160, 120, 80, 0.15);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 32px);
+  max-width: 370px;
+  height: 82%;
+  max-height: 720px;
+  background: #FFF5EE;
+  z-index: var(--z-sheet);
+  border-radius: 24px;
+  border: 3.5px solid var(--warm-border, #CDA080);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-/* ---- Drag Handle ---- */
-.sheet-drag-handle {
-  width: 36px;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(0, 0, 0, 0.15);
-  margin: 8px auto 4px;
-  flex-shrink: 0;
-}
-
-/* ---- Sheet Header ---- */
-.sheet-header {
-  padding: 8px 16px 8px;
+/* ---- New Premium Header ---- */
+.sheet-header-new {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 12px 14px 8px;
+  width: 100%;
+  box-sizing: border-box;
   flex-shrink: 0;
 }
 
-.sheet-header-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.sheet-header-left > span {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--text-dark);
-}
-
-/* Lucide icon in sheet headers */
-.sheet-header-icon {
-  width: 18px;
-  height: 18px;
-  stroke: var(--accent-pink);
-  flex-shrink: 0;
-}
-
-/* ---- Close Button ---- */
-.sheet-close {
-  width: 30px;
-  height: 30px;
-  border: none;
+.sheet-back-btn,
+.sheet-help-btn {
+  width: 32px;
+  height: 32px;
+  background: #fff;
+  border: 2px solid var(--warm-border, #CDA080);
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.06);
-  color: rgba(0, 0, 0, 0.5);
-  font-size: 16px;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  font-family: 'Jiangcheng Yuanti', inherit;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--warm-border, #CDA080);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s ease;
+  padding: 0;
+  line-height: 1;
 }
 
-.sheet-close:hover {
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.sheet-close:active {
+.sheet-back-btn:active,
+.sheet-help-btn:active {
   transform: scale(0.9);
-  background: rgba(0, 0, 0, 0.15);
+}
+
+.sheet-title-pill {
+  background: #FFF;
+  border: 3px solid var(--warm-border, #CDA080);
+  border-radius: 99px;
+  padding: 6px 36px;
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--warm-border, #CDA080);
+  box-shadow: 0 4px 8px rgba(181, 147, 116, 0.15);
+  text-align: center;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sheet-title-icon {
+  font-size: 15px;
+  line-height: 1;
 }
 
 /* ---- Subtitle ---- */
@@ -192,6 +200,7 @@ watch(
   font-weight: 500;
   padding: 2px 16px 6px;
   flex-shrink: 0;
+  text-align: center;
 }
 
 /* ---- Sheet Body ---- */
@@ -208,7 +217,7 @@ watch(
 /* ---- Vue Transitions ---- */
 .sheet-backdrop-enter-active,
 .sheet-backdrop-leave-active {
-  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sheet-backdrop-enter-from,
@@ -218,11 +227,82 @@ watch(
 
 .sheet-slide-enter-active,
 .sheet-slide-leave-active {
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
 }
 
 .sheet-slide-enter-from,
 .sheet-slide-leave-to {
-  transform: translateY(100%);
+  opacity: 0;
+  transform: translate(-50%, -42%) scale(0.93);
+}
+
+.sheet-slide-enter-to,
+.sheet-slide-leave-from {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* ---- Bottom Layout Styles ---- */
+.bottom-sheet-backdrop.layout-bottom {
+  background: rgba(90, 62, 43, 0.15);
+  pointer-events: none;
+}
+
+.bottom-sheet.layout-bottom {
+  top: auto;
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, 0);
+  width: 100cqw;
+  max-width: 100%;
+  height: 48%;
+  max-height: 420px;
+  border-radius: 24px 24px 0 0;
+  border-bottom: none;
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.sheet-slide-enter-from.layout-bottom,
+.sheet-slide-leave-to.layout-bottom {
+  opacity: 0;
+  transform: translate(-50%, 100%);
+}
+
+.sheet-slide-enter-to.layout-bottom,
+.sheet-slide-leave-from.layout-bottom {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ---- Warm Theme (Achievement Sheet) ---- */
+.bottom-sheet.theme-warm {
+  background: var(--ach-bg-panel, #ffdfc8);
+  border: 3px solid white;
+  border-radius: 12px;
+  box-shadow: var(--shadow-panel);
+}
+
+.theme-warm .sheet-back-btn,
+.theme-warm .sheet-help-btn {
+  background: var(--off-white, #FAF5F8);
+  border: none;
+  border-radius: 32px;
+  box-shadow: var(--shadow-neu-up), var(--shadow-neu-down);
+  color: var(--ach-text-dark, #695e59);
+}
+
+.theme-warm .sheet-title-pill {
+  background: #F5F5FA;
+  border: none;
+  border-radius: 13px;
+  box-shadow: 0px 4px 2px rgba(0,0,0,0.25);
+  color: var(--caramel, #DDAA8B);
+  font-weight: 600;
+}
+
+.theme-warm .sheet-title-text {
+  font-family: 'Jiangcheng Yuanti', sans-serif;
+  font-weight: 600;
 }
 </style>
+

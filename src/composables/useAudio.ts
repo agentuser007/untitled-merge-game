@@ -29,6 +29,7 @@ const sharedState = {
   bgmPaused: ref(false),
   currentBGMName: null as string | null,
   sfxHowls: {} as Record<string, Howl>,
+  bgmHowls: {} as Record<string, Howl>,
   bgmHowl: null as Howl | null,
   pendingBGM: null as string | null,
   unlocked: false,
@@ -117,35 +118,46 @@ export function useAudio() {
     if (sharedState.bgmHowl) {
       if (sharedState.currentBGMName === name && !sharedState.bgmPaused.value) return;
       sharedState.bgmHowl.stop();
-      sharedState.bgmHowl.unload();
       sharedState.bgmHowl = null;
     }
 
     const vol = sharedState.bgmVolume.value;
 
-    const howl = new Howl({
-      src: [audioPath(filename)],
-      loop: true,
-      volume: 0,
-      preload: true,
-    });
+    let howl = sharedState.bgmHowls[name];
+    if (!howl) {
+      howl = new Howl({
+        src: [audioPath(filename)],
+        loop: true,
+        volume: 0,
+        preload: true,
+      });
 
-    howl.once('load', () => {
+      howl.once('loaderror', (_id: number, err: unknown) => {
+        console.warn(`[useAudio] BGM load error: ${name}`, err);
+        sharedState.pendingBGM = name;
+        sharedState.bgmPaused.value = true;
+      });
+
+      howl.once('playerror', (_id: number, err: unknown) => {
+        console.warn(`[useAudio] BGM play blocked: ${name}`, err);
+        sharedState.pendingBGM = name;
+        sharedState.bgmPaused.value = true;
+      });
+
+      sharedState.bgmHowls[name] = howl;
+    }
+
+    if (howl.state() === 'loaded') {
+      howl.volume(0);
       howl.play();
       howl.fade(0, vol, 800);
-    });
-
-    howl.once('loaderror', (_id: number, err: unknown) => {
-      console.warn(`[useAudio] BGM load error: ${name}`, err);
-      sharedState.pendingBGM = name;
-      sharedState.bgmPaused.value = true;
-    });
-
-    howl.once('playerror', (_id: number, err: unknown) => {
-      console.warn(`[useAudio] BGM play blocked: ${name}`, err);
-      sharedState.pendingBGM = name;
-      sharedState.bgmPaused.value = true;
-    });
+    } else {
+      howl.once('load', () => {
+        howl.volume(0);
+        howl.play();
+        howl.fade(0, vol, 800);
+      });
+    }
 
     sharedState.bgmHowl = howl;
     sharedState.currentBGMName = name;

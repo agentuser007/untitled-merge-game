@@ -191,6 +191,26 @@
     "id": "gen_study_8",
     "name": "Hall of Knowledge"
   },
+  "energy_potion_10": {
+    "id": "energy_potion_10",
+    "name": "Small Coffee"
+  },
+  "energy_potion_20": {
+    "id": "energy_potion_20",
+    "name": "Coffee"
+  },
+  "energy_potion_30": {
+    "id": "energy_potion_30",
+    "name": "Large Latte"
+  },
+  "energy_potion_50": {
+    "id": "energy_potion_50",
+    "name": "Energy Drink"
+  },
+  "energy_potion_100": {
+    "id": "energy_potion_100",
+    "name": "Special Vitality Drink"
+  },
   "joker": {
     "id": "joker",
     "name": "Wild Card",
@@ -200,5 +220,105 @@
     "id": "scissor",
     "name": "Time Scissors",
     "description": "Split a high-level item into two items of one level lower"
+  },
+  "sr_double_gen": {
+    "id": "sr_double_gen",
+    "name": "Double Output Card",
+    "description": "Doubles generator output"
+  },
+  "sr_clear_lv1": {
+    "id": "sr_clear_lv1",
+    "name": "Broom Upgrade",
+    "description": "Clears Lv1 items"
+  },
+  "sr_reroll_1": {
+    "id": "sr_reroll_1",
+    "name": "Swap Scroll · Small",
+    "description": "Swaps 3 items"
+  },
+  "sr_reroll_2": {
+    "id": "sr_reroll_2",
+    "name": "Swap Scroll · Large",
+    "description": "Swaps 5 items"
+  },
+  "sr_lucky_7": {
+    "id": "sr_lucky_7",
+    "name": "Lucky Seven",
+    "description": "Lucky coin effect"
+  },
+  "sr_frag_pack": {
+    "id": "sr_frag_pack",
+    "name": "Fragment Gift Pack",
+    "description": "Gain lots of fragments"
+  },
+  "sr_gen_refresh": {
+    "id": "sr_gen_refresh",
+    "name": "Generator Refresh Card",
+    "description": "Refresh all generators"
+  },
+  "sr_diamond_50": {
+    "id": "sr_diamond_50",
+    "name": "Diamond Envelope",
+    "description": "Gain 50 diamonds"
+  },
+  "sr_gold_pack": {
+    "id": "sr_gold_pack",
+    "name": "Gold Gift Pack",
+    "description": "Gain 500 gold"
+  },
+  "sr_space_clean": {
+    "id": "sr_space_clean",
+    "name": "Space Cleaner",
+    "description": "Clean board space"
+  },
+  "sr_upgrade_1": {
+    "id": "sr_upgrade_1",
+    "name": "Mini Upgrade Card",
+    "description": "Upgrade an item"
+  },
+  "r_item_lip_rand12": {
+    "id": "r_item_lip_rand12",
+    "name": "Lip Makeup Surprise Box · Lv1-2",
+    "description": "Random Lv1-2 lip makeup"
+  },
+  "r_item_perf_rand12": {
+    "id": "r_item_perf_rand12",
+    "name": "Perfume Surprise Box · Lv1-2",
+    "description": "Random Lv1-2 perfume"
+  },
+  "r_item_study_rand12": {
+    "id": "r_item_study_rand12",
+    "name": "Study Surprise Box · Lv1-2",
+    "description": "Random Lv1-2 study item"
+  },
+  "r_item_food_rand12": {
+    "id": "r_item_food_rand12",
+    "name": "Gourmet Surprise Box · Lv1-2",
+    "description": "Random Lv1-2 gourmet item"
+  },
+  "r_item_mix_lv1": {
+    "id": "r_item_mix_lv1",
+    "name": "Random Item · Lv1",
+    "description": "Random Lv1 item"
+  },
+  "r_item_mix_lv2": {
+    "id": "r_item_mix_lv2",
+    "name": "Random Item · Lv2",
+    "description": "Random Lv2 item"
+  },
+  "r_item_mix1": {
+    "id": "r_item_mix1",
+    "name": "Random Item Pack",
+    "description": "Random Lv3-4 item"
+  },
+  "r_item_mix2": {
+    "id": "r_item_mix2",
+    "name": "Surprise Item Pack",
+    "description": "Random Lv3-5 item"
+  },
+  "r_item_lucky_bag": {
+    "id": "r_item_lucky_bag",
+    "name": "Heartbeat Lucky Bag · Lv1-3",
+    "description": "Random Lv1-3 item"
   }
 }

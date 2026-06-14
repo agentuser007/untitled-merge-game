@@ -59,12 +59,10 @@ export const useAdStore = defineStore('ad', () => {
         const config = adConfig[adType as keyof AdConfig];
         if (!config) return false;
         
-        // Check daily limit
-        if (dailyAdCounts.value[adType] >= (config as any).dailyLimit) return false;
+        if (dailyAdCounts.value[adType] >= config.dailyLimit) return false;
         
-        // Check cooldown
-        if ((config as any).cooldownMs > 0 && lastWatchTime.value[adType]) {
-            if (Date.now() - lastWatchTime.value[adType] < (config as any).cooldownMs) return false;
+        if (config.cooldownMs > 0 && lastWatchTime.value[adType]) {
+            if (Date.now() - lastWatchTime.value[adType] < config.cooldownMs) return false;
         }
         
         return true;
@@ -75,7 +73,7 @@ export const useAdStore = defineStore('ad', () => {
         const config = adConfig[adType as keyof AdConfig];
         if (!config) return 0;
         
-        const remaining = (config as any).dailyLimit - (dailyAdCounts.value[adType] || 0);
+        const remaining = config.dailyLimit - (dailyAdCounts.value[adType] || 0);
         return remaining === Infinity ? '∞' : remaining;
     }
 
@@ -86,10 +84,9 @@ export const useAdStore = defineStore('ad', () => {
         const config = adConfig[adType as keyof AdConfig];
         if (!config) return;
         
-        // Emit event for rewards
         globalBus.emit('ad:rewardGranted', {
             adType,
-            reward: (config as any).reward
+            reward: 'reward' in config ? config.reward : 0
         });
     }
 
@@ -133,24 +130,25 @@ export const useAdStore = defineStore('ad', () => {
         };
     }
 
-    function deserialize(data: any) {
+    function deserialize(data: unknown) {
         if (!data) return;
+        const d = data as { dailyAdCounts?: Record<string, number>; lastWatchTime?: Record<string, number>; lastResetDate?: string };
         
-        dailyAdCounts.value = data.dailyAdCounts || {
+        dailyAdCounts.value = d.dailyAdCounts || {
             energy: 0,
             gold: 0,
             diamonds: 0,
             freePull: 0
         };
         
-        lastWatchTime.value = data.lastWatchTime || {
+        lastWatchTime.value = d.lastWatchTime || {
             energy: 0,
             gold: 0,
             diamonds: 0,
             freePull: 0
         };
         
-        lastResetDate.value = data.lastResetDate || getCurrentDateStr();
+        lastResetDate.value = d.lastResetDate || getCurrentDateStr();
         checkDailyReset();
     }
 

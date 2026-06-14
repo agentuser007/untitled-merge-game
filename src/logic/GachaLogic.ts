@@ -4,7 +4,8 @@
 // ============================================================
 
 import { StateMachine } from '../core/StateMachine';
-import { globalBus } from '../core/EventBus';
+import type { LogicEvent } from './BoardLogic';
+import type { GachaPoolItemValue } from '../types/game';
 
 export interface GachaItem {
   id: string;
@@ -13,8 +14,9 @@ export interface GachaItem {
   weight: number;
   icon: string;
   name: string;
+  itemId?: string;
   effect: string;
-  value: any;
+  value: GachaPoolItemValue;
 }
 
 export interface GachaRarityConfig {
@@ -47,6 +49,18 @@ export interface GachaPulledEvent {
   results: GachaItem[];
 }
 
+export interface GachaRandomDeps {
+  random: () => number;
+}
+
+export interface GachaSnapshot {
+  ssrOwned: Record<string, boolean>;
+}
+
+export interface CurrencyLike {
+  canAffordDiamonds: (cost: number) => boolean;
+}
+
 export class GachaLogic {
   ssrOwned: { [key: string]: boolean };
   fsm: StateMachine;
@@ -64,20 +78,19 @@ export class GachaLogic {
     });
   }
 
-  rollOne(gachaConfig: GachaConfig, maxRarity?: 'R' | 'SR' | 'SSR'): GachaItem | null {
-    const roll = Math.random();
-    const rarityConfig = (gachaConfig as any)?.rarityConfig;
+  rollOne(gachaConfig: GachaConfig, deps: GachaRandomDeps, maxRarity?: 'R' | 'SR' | 'SSR'): GachaItem | null {
+    const roll = deps.random();
+    const rarityConfig = gachaConfig.rarityConfig;
     const ssrThreshold = rarityConfig?.SSR?.probability ?? 0;
     const srThreshold = ssrThreshold + (rarityConfig?.SR?.probability ?? 0);
     let rarity: 'R' | 'SR' | 'SSR' = roll < ssrThreshold ? 'SSR' : roll < srThreshold ? 'SR' : 'R';
-    // Enforce max rarity cap (e.g., free pull caps at SR)
     if (maxRarity && rarity === 'SSR' && maxRarity === 'SR') {
       rarity = 'SR';
     }
     let pool = gachaConfig.gachaPoolV2.filter(i => i.rarity === rarity);
     if ((rarity === 'R' || rarity === 'SR') && gachaConfig.subWeights[rarity]) {
       const sw = gachaConfig.subWeights[rarity];
-      const subRoll = Math.random();
+      const subRoll = deps.random();
       let subCat: string | null = null, cum = 0;
       for (const [cat, w] of Object.entries(sw)) {
         cum += w;
@@ -88,59 +101,56 @@ export class GachaLogic {
         if (subPool.length > 0) pool = subPool;
       }
     }
-    const result = this.weightedPick(pool);
-    // Fallback: if subPool was empty, try full rarity pool
+    const result = this.weightedPick(pool, deps);
     if (!result && pool.length === 0) {
       const fullPool = gachaConfig.gachaPoolV2.filter(i => i.rarity === rarity);
-      return this.weightedPick(fullPool);
+      return this.weightedPick(fullPool, deps);
     }
     return result;
   }
 
-  pullSingle(gachaConfig: GachaConfig, maxRarity?: 'R' | 'SR' | 'SSR'): GachaItem | null {
-    if (!this.fsm.can('PULL')) return null;
+  pullSingle(gachaConfig: GachaConfig, deps: GachaRandomDeps, maxRarity?: 'R' | 'SR' | 'SSR'): { result: GachaItem | null; events: LogicEvent[] } {
+    if (!this.fsm.can('PULL')) return { result: null, events: [] };
     this.fsm.send('PULL');
-    const result = this.rollOne(gachaConfig, maxRarity);
+    const result = this.rollOne(gachaConfig, deps, maxRarity);
     if (!result) {
       this.fsm.reset('IDLE');
-      return null;
+      return { result: null, events: [] };
     }
     this.fsm.send('DONE');
-    globalBus.emit('gacha:pulled', { results: [result] } as GachaPulledEvent);
-    return result;
+    return { result, events: [{ type: 'gacha:pulled', payload: { results: [result] } }] };
   }
 
-  pullTen(gachaConfig: GachaConfig): GachaItem[] | null {
-    if (!this.fsm.can('PULL')) return null;
+  pullTen(gachaConfig: GachaConfig, tenPullCount: number, deps: GachaRandomDeps): { results: GachaItem[] | null; events: LogicEvent[] } {
+    if (!this.fsm.can('PULL')) return { results: null, events: [] };
     this.fsm.send('PULL');
     const results: GachaItem[] = [];
     let hasSrPlus = false;
-    for (let i = 0; i < 10; i++) {
-      const r = this.rollOne(gachaConfig);
+    for (let i = 0; i < tenPullCount; i++) {
+      const r = this.rollOne(gachaConfig, deps);
       if (r) {
         results.push(r);
         if (r.rarity === 'SR' || r.rarity === 'SSR') hasSrPlus = true;
       }
     }
-    // Ten-pull SR guarantee: if no SR+ in 10 pulls, replace last with random SR
     if (!hasSrPlus && results.length > 0) {
       const srPool = gachaConfig.gachaPoolV2.filter(i => i.rarity === 'SR');
-      if (srPool.length > 0) results[results.length - 1] = this.weightedPick(srPool)!;
+      if (srPool.length > 0) results[results.length - 1] = this.weightedPick(srPool, deps)!;
     }
     this.fsm.send('DONE');
-    if (results.length > 0) globalBus.emit('gacha:pulled', { results } as GachaPulledEvent);
-    return results;
+    const events = results.length > 0 ? [{ type: 'gacha:pulled' as const, payload: { results } }] : [];
+    return { results, events };
   }
 
   acknowledge(): void {
     if (this.fsm.can('ACK')) this.fsm.send('ACK');
   }
 
-  weightedPick(pool: GachaItem[]): GachaItem | null {
+  weightedPick(pool: GachaItem[], deps: GachaRandomDeps): GachaItem | null {
     if (!pool || pool.length === 0) return null;
     const total = pool.reduce((s, i) => s + i.weight, 0);
     if (total <= 0) return pool[0];
-    let r = Math.random() * total;
+    let r = deps.random() * total;
     for (const item of pool) {
       r -= item.weight;
       if (r <= 0) return item;
@@ -148,11 +158,11 @@ export class GachaLogic {
     return pool[0];
   }
 
-  canAffordSingle(currency: any, gachaConfig: GachaConfig): boolean {
+  canAffordSingle(currency: CurrencyLike, gachaConfig: GachaConfig): boolean {
     return currency.canAffordDiamonds(gachaConfig.gachaCost.singleCost);
   }
 
-  canAffordTen(currency: any, gachaConfig: GachaConfig): boolean {
+  canAffordTen(currency: CurrencyLike, gachaConfig: GachaConfig): boolean {
     return currency.canAffordDiamonds(gachaConfig.gachaCost.tenCost);
   }
 
@@ -166,11 +176,11 @@ export class GachaLogic {
     return !this.ssrOwned[ssrId];
   }
 
-  serialize(): any {
+  serialize(): GachaSnapshot {
     return { ssrOwned: { ...this.ssrOwned } };
   }
 
-  deserialize(data: any): void {
+  deserialize(data: GachaSnapshot | null): void {
     if (!data) return;
     this.ssrOwned = data.ssrOwned || {};
     // Old save data with pity counters is safely ignored

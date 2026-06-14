@@ -56,6 +56,24 @@ export const useCollectionStore = defineStore('collection', () => {
         return chains;
     });
 
+    const gachaByRarity = computed(() => {
+        const groups: Record<string, any[]> = { SSR: [], SR: [], R: [] };
+        for (const card of configStore.gachaPool) {
+            const r = card.rarity;
+            if (groups[r]) {
+                groups[r].push({
+                    ...card,
+                    collected: gachaCollected.value.has(card.id)
+                });
+            }
+        }
+        return groups;
+    });
+
+    const gachaSSRCount = computed(() => gachaByRarity.value.SSR.filter(c => c.collected).length);
+    const gachaSRCount = computed(() => gachaByRarity.value.SR.filter(c => c.collected).length);
+    const gachaRCount = computed(() => gachaByRarity.value.R.filter(c => c.collected).length);
+
     const discoveredItemsCount = computed(() => discovered.value.size);
     const gachaCollectedCount = computed(() => gachaCollected.value.size);
 
@@ -152,14 +170,15 @@ export const useCollectionStore = defineStore('collection', () => {
         };
     }
 
-    function deserialize(data: any) {
+    function deserialize(data: unknown) {
         if (!data) return;
+        const d = data as { discovered?: string[]; discoveredThisLoop?: string[]; gachaCollected?: string[]; completedChains?: string[]; activeTab?: 'items' | 'gacha' | 'fragments' };
         
-        discovered.value = new Set(data.discovered || []);
-        discoveredThisLoop.value = new Set(data.discoveredThisLoop || []);
-        gachaCollected.value = new Set(data.gachaCollected || []);
-        completedChains.value = new Set(data.completedChains || []);
-        activeTab.value = data.activeTab || 'items';
+        discovered.value = new Set(d.discovered || []);
+        discoveredThisLoop.value = new Set(d.discoveredThisLoop || []);
+        gachaCollected.value = new Set(d.gachaCollected || []);
+        completedChains.value = new Set(d.completedChains || []);
+        activeTab.value = d.activeTab || 'items';
     }
 
     return {
@@ -174,6 +193,10 @@ export const useCollectionStore = defineStore('collection', () => {
         completionPercentage,
         gachaCompletionPercentage,
         chainGroups,
+        gachaByRarity,
+        gachaSSRCount,
+        gachaSRCount,
+        gachaRCount,
         discoveredItemsCount,
         gachaCollectedCount,
         

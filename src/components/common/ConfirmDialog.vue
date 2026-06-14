@@ -47,11 +47,11 @@ function onCancel() {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 800;
+  z-index: var(--z-modal);
 }
 
 .confirm-card {
-  background: var(--off-white, #fff8f0);
+  background: var(--off-white, #FAF5F8);
   border-radius: 16px;
   padding: 24px;
   min-width: 260px;
@@ -63,7 +63,7 @@ function onCancel() {
 .confirm-message {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary, #333);
+  color: var(--text-primary, #fff);
   margin-bottom: 20px;
   line-height: 1.5;
 }
@@ -89,8 +89,8 @@ function onCancel() {
 }
 
 .confirm-cancel {
-  background: #e0e0e0;
-  color: #666;
+  background: var(--surface-muted);
+  color: var(--text-muted-alt);
 }
 
 .confirm-ok {

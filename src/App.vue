@@ -1,9 +1,11 @@
 <template>
   <GameView />
+  <DevPanel />
 </template>
 
 <script setup lang="ts">
 import GameView from './views/GameView.vue'
+import DevPanel from './components/common/DevPanel.vue'
 </script>
 
 <style>

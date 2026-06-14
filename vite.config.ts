@@ -4,6 +4,8 @@ import { resolve } from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/Heartbeat-Merge-Game/', 
+  
   plugins: [vue()],
   resolve: {
     alias: {

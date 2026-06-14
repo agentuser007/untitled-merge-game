@@ -12,6 +12,9 @@
     "orderFailPlayer": "（唉，下次要更快才行……）",
     "diamondReward": "💎 +{count} 钻石"
   },
+  "board": {
+    "canMerge": "还可以合成哦"
+  },
   "currency": {
     "luckyCoinBoost": "🍀 幸运币翻倍！剩余{count}次"
   },
@@ -23,7 +26,7 @@
     "chainFood": "美食系列",
     "tabItems": "物品图鉴",
     "tabGacha": "卡牌图鉴",
-    "tabFragments": "碎片",
+    "tabFragments": "记忆回廊",
     "raritySSR": "👑 SSR 传说",
     "raritySR": "💜 SR 稀有",
     "rarityR": "💙 R 普通",
@@ -46,16 +49,27 @@
     "chainCompleteBadge": "✅ 已完成",
     "rewardDiamonds": "💎+{amount}",
     "rewardEnergy": "⚡+{amount}",
-    "rewardGold": "🪙+{amount}"
+    "rewardGold": "🪙+{amount}",
+    "filterAll": "全部",
+    "memoryCorridor": "记忆回廊",
+    "chapterUnlocked": "✅ 已解锁",
+    "chapterCanUnlock": "🔓 可解锁",
+    "chapterLocked": "🔒 未解锁",
+    "unlockStoryBtn": "✨ 解锁 ({cost}🧩)",
+    "reviewStoryBtn": "📖 回顾",
+    "allChaptersUnlocked": "✅ 全部章节已解锁",
+    "needFragments": "需要 {cost} 碎片",
+    "canUnlockHint": "✨ 可解锁",
+    "chaptersCount": "📖 {current}/{total} 章节"
   },
   "dailyOrder": {
     "panelTitle": "日常跑腿",
     "panelSub": "提交物品赚金币",
     "submit": "提交",
-    "fulfill": "提交",
     "completed": "✅ 已完成",
     "refreshed": "新的日常订单已刷新！",
-    "orderComplete": "订单完成！"
+    "orderComplete": "订单完成！",
+    "fulfill": "完成"
   },
   "dialogue": {
     "tapContinue": "继续 ▸"
@@ -98,21 +112,15 @@
     "luckyMerge": "幸运合成",
     "luckyMergeDesc": "合成时有概率跳级"
   },
-  "game_complete": {
-    "emoji": "👑",
-    "title": "🎉 通关成功 🎉",
-    "subtitle": "你就是永远的电眼女王！",
-    "button": "🔄 重新开始"
-  },
   "gacha": {
-    "panelTitle": "扣蛋机",
     "modalTitle": "扣蛋机",
     "hint": "✨ 花费钻石抽取随机道具！",
-    "singlePull": "单抽",
     "singlePullLabel": "单抽",
-    "tenPull": "十连抽",
     "tenPullLabel": "十连抽",
-    "freePull": "🎥 免费"
+    "panelTitle": "扣蛋机",
+    "singlePull": "单抽",
+    "tenPull": "十连抽",
+    "freePull": "免费抽"
   },
   "heroine": {
     "panelTitle": "女主养成",
@@ -226,7 +234,6 @@
     "celebrateEmojis": "🎉,🥳,💖,✨,🌟,🎊"
   },
   "gameTitle": "心动合成：电眼女王",
-  "loading": "加载中...",
   "loop": {
     "rewardBadge": "奖励 x{multiplier}",
     "newStart": "新的开始！",
@@ -350,5 +357,12 @@
     "skipActive": "⏹ 跳过中",
     "end": "—— 完 ——",
     "chapterEnded": "章节已结束，点击任意处返回"
+  },
+  "loading": "加载中...",
+  "game_complete": {
+    "emoji": "👑",
+    "title": "恭喜通关！",
+    "subtitle": "你就是永远的电眼女王！",
+    "button": "再来一次"
   }
 }

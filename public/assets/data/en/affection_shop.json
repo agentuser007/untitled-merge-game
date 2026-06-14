@@ -1,0 +1,31 @@
+{
+  "categories": [
+    { "id": "energy", "name": "Energy", "icon": "⚡" },
+    { "id": "gift", "name": "Gifts", "icon": "🎁" },
+    { "id": "buff", "name": "Buffs", "icon": "🛠️" }
+  ],
+  "items": [
+    { "id": "morven_coffee", "name": "Morven's Coffee", "icon": "☕", "thankDialogue": "...Hmm, your favorite blend. I'll remember." },
+    { "id": "daniel_juice", "name": "Daniel's Juice", "icon": "🧃", "thankDialogue": "Hey! I'll treat you to something even better next time!" },
+    { "id": "vincent_tea", "name": "Vincent's Tea", "icon": "🍵", "thankDialogue": "...Thank you. A fair exchange." },
+    { "id": "leo_cola", "name": "Leo's Cola", "icon": "🥤", "thankDialogue": "Hmph, it's not like you had to buy it... Thanks." },
+    { "id": "bento_set", "name": "Bento Set", "icon": "🍱" },
+    { "id": "special_cake", "name": "Special Cake", "icon": "🎂" },
+    { "id": "old_bookmark", "name": "Old Bookmark", "icon": "📖" },
+    { "id": "coffee_beans", "name": "Coffee Beans", "icon": "☕" },
+    { "id": "sports_drink", "name": "Sports Drink", "icon": "⚽" },
+    { "id": "guitar_pick", "name": "Guitar Pick", "icon": "🎸" },
+    { "id": "folder", "name": "Folder", "icon": "📋" },
+    { "id": "fountain_pen", "name": "Fountain Pen", "icon": "✒️" },
+    { "id": "spicy_stick", "name": "Spicy Stick", "icon": "🍬" },
+    { "id": "game_cartridge", "name": "Game Cartridge", "icon": "🎮" },
+    { "id": "cookies", "name": "Cookies", "icon": "🍪" },
+    { "id": "flower_bouquet", "name": "Flower Bouquet", "icon": "🌸" },
+    { "id": "bracelet", "name": "Bracelet", "icon": "💍" },
+    { "id": "merge_boost", "name": "Merge Boost", "icon": "⚡" },
+    { "id": "lucky_clover", "name": "Lucky Clover", "icon": "🍀" },
+    { "id": "shield", "name": "Shield", "icon": "🛡️" },
+    { "id": "fragment_boost", "name": "Fragment Boost", "icon": "💎" },
+    { "id": "order_refresh", "name": "Order Refresh", "icon": "🔮" }
+  ]
+}

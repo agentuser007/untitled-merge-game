@@ -1,0 +1,90 @@
+{
+  "morven": {
+    "name": "林墨白",
+    "nameEn": "Morven",
+    "color": "#7B68EE",
+    "avatar": "assets/avatar/morven_no_bg.png",
+    "background": "assets/avatar/morven_bg.webp",
+    "birthday": "11月7日",
+    "title": "冰山学霸",
+    "likes": ["咖啡", "安静", "天台", "旧书"],
+    "dislikes": ["吵闹", "无意义的社交", "甜食"],
+    "sensorySignature": {
+      "smell": "旧书页+淡淡咖啡",
+      "touch": "指尖微凉",
+      "sound": "翻书声",
+      "taste": "黑咖啡的苦"
+    },
+    "gifts": {
+      "loved": ["手冲咖啡豆", "旧书签"],
+      "liked": ["笔记本", "钢笔"],
+      "normal": ["饼干", "果汁"]
+    }
+  },
+  "daniel": {
+    "name": "Daniel",
+    "nameEn": "Daniel",
+    "color": "#4169E1",
+    "avatar": "assets/avatar/daniel_no_bg.png",
+    "background": "assets/avatar/daniel_bg.webp",
+    "birthday": "5月20日",
+    "title": "阳光学长",
+    "likes": ["运动", "音乐", "吉他", "果汁"],
+    "dislikes": ["无聊", "被束缚", "安静太久"],
+    "sensorySignature": {
+      "smell": "运动后阳光+薄荷",
+      "touch": "掌心温热",
+      "sound": "吉他弦音",
+      "taste": "冰果汁的甜"
+    },
+    "gifts": {
+      "loved": ["吉他拨片", "运动饮料"],
+      "liked": ["饼干", "花束"],
+      "normal": ["咖啡", "茶"]
+    }
+  },
+  "vincent": {
+    "name": "司徒渊",
+    "nameEn": "Vincent",
+    "color": "#483D8B",
+    "avatar": "assets/avatar/vincent_no_bg.png",
+    "background": "assets/avatar/vincent_bg.webp",
+    "birthday": "9月15日",
+    "title": "铁面副会长",
+    "likes": ["秩序", "红茶", "钢笔", "文件整理"],
+    "dislikes": ["混乱", "迟到", "不守规矩"],
+    "sensorySignature": {
+      "smell": "红茶+纸张",
+      "touch": "指尖干燥沉稳",
+      "sound": "钢笔落纸声",
+      "taste": "伯爵茶的涩"
+    },
+    "gifts": {
+      "loved": ["钢笔", "文件夹"],
+      "liked": ["花束", "书签"],
+      "normal": ["饼干", "果汁"]
+    }
+  },
+  "leo": {
+    "name": "陆之昂",
+    "nameEn": "Leo",
+    "color": "#FF6347",
+    "avatar": "assets/avatar/leo_no_bg.png",
+    "background": "assets/avatar/leo_bg.webp",
+    "birthday": "3月21日",
+    "title": "傲娇毒舌王",
+    "likes": ["游戏", "辣条", "可乐", "动漫"],
+    "dislikes": ["早起", "被管", "无聊的课"],
+    "sensorySignature": {
+      "smell": "可乐+游戏手柄",
+      "touch": "指尖微颤",
+      "sound": "按键声",
+      "taste": "辣条的麻"
+    },
+    "gifts": {
+      "loved": ["游戏卡带", "辣条"],
+      "liked": ["饼干", "花束"],
+      "normal": ["咖啡", "茶"]
+    }
+  }
+}

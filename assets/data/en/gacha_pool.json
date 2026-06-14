@@ -6,78 +6,370 @@
     "food": "Gourmet"
   },
   "gachaPoolV2": [
-    { "id": "r_item_lip1", "name": "Lip Makeup · Lv1" },
-    { "id": "r_item_lip2", "name": "Lip Makeup · Lv2" },
-    { "id": "r_item_lip_rand12", "name": "Lip Makeup Surprise Box · Lv1-2" },
-    { "id": "r_item_lip3", "name": "Lip Makeup · Lv3" },
-    { "id": "r_item_lip4", "name": "Lip Makeup · Lv4" },
-    { "id": "r_item_lip5", "name": "Lip Makeup · Lv5" },
-    { "id": "r_item_perf1", "name": "Perfume · Lv1" },
-    { "id": "r_item_perf2", "name": "Perfume · Lv2" },
-    { "id": "r_item_perf_rand12", "name": "Perfume Surprise Box · Lv1-2" },
-    { "id": "r_item_perf3", "name": "Perfume · Lv3" },
-    { "id": "r_item_perf4", "name": "Perfume · Lv4" },
-    { "id": "r_item_perf5", "name": "Perfume · Lv5" },
-    { "id": "r_item_study1", "name": "Study · Lv1" },
-    { "id": "r_item_study2", "name": "Study · Lv2" },
-    { "id": "r_item_study_rand12", "name": "Study Surprise Box · Lv1-2" },
-    { "id": "r_item_study3", "name": "Study · Lv3" },
-    { "id": "r_item_study4", "name": "Study · Lv4" },
-    { "id": "r_item_study5", "name": "Study · Lv5" },
-    { "id": "r_item_food1", "name": "Gourmet · Lv1" },
-    { "id": "r_item_food2", "name": "Gourmet · Lv2" },
-    { "id": "r_item_food_rand12", "name": "Gourmet Surprise Box · Lv1-2" },
-    { "id": "r_item_food3", "name": "Gourmet · Lv3" },
-    { "id": "r_item_food4", "name": "Gourmet · Lv4" },
-    { "id": "r_item_food5", "name": "Gourmet · Lv5" },
-    { "id": "r_item_mix_lv1", "name": "Random Item · Lv1" },
-    { "id": "r_item_mix_lv2", "name": "Random Item · Lv2" },
-    { "id": "r_item_mix1", "name": "Random Item Pack" },
-    { "id": "r_item_mix2", "name": "Surprise Item Pack" },
-    { "id": "r_item_lucky_bag", "name": "Heartbeat Lucky Bag · Lv1-3" },
-    { "id": "sr_gen_lip4", "name": "Lip Makeup Generator · Lv4" },
-    { "id": "sr_gen_lip5", "name": "Lip Makeup Generator · Lv5" },
-    { "id": "sr_gen_perf4", "name": "Perfume Generator · Lv4" },
-    { "id": "sr_gen_perf5", "name": "Perfume Generator · Lv5" },
-    { "id": "sr_gen_study4", "name": "Study Generator · Lv4" },
-    { "id": "sr_gen_study5", "name": "Study Generator · Lv5" },
-    { "id": "sr_gen_food4", "name": "Gourmet Generator · Lv4" },
-    { "id": "sr_gen_food5", "name": "Gourmet Generator · Lv5" },
-    { "id": "sr_joker", "name": "Wild Card" },
-    { "id": "sr_scissor", "name": "Time Scissors" },
-    { "id": "sr_double_gen", "name": "Double Output Card" },
-    { "id": "sr_energy_full", "name": "Full Energy Pack" },
-    { "id": "sr_clear_lv1", "name": "Broom Upgrade" },
-    { "id": "sr_reroll_1", "name": "Swap Scroll · Small" },
-    { "id": "sr_reroll_2", "name": "Swap Scroll · Large" },
-    { "id": "sr_lucky_7", "name": "Lucky Seven" },
-    { "id": "sr_frag_pack", "name": "Fragment Gift Pack" },
-    { "id": "sr_gen_refresh", "name": "Generator Refresh Card" },
-    { "id": "sr_diamond_50", "name": "Diamond Envelope" },
-    { "id": "sr_gold_pack", "name": "Gold Gift Pack" },
-    { "id": "sr_space_clean", "name": "Space Cleaner" },
-    { "id": "sr_upgrade_1", "name": "Mini Upgrade Card" },
-    { "id": "sr_energy_coffee_s", "name": "Morning Coffee · Small" },
-    { "id": "sr_energy_coffee_l", "name": "Morning Coffee · Large" },
-    { "id": "sr_energy_milktea_s", "name": "Bubble Tea · Small" },
-    { "id": "sr_energy_milktea_l", "name": "Bubble Tea · Large" },
-    { "id": "sr_energy_juice_s", "name": "Fresh Juice · Small" },
-    { "id": "sr_energy_juice_l", "name": "Fresh Juice · Large" },
-    { "id": "sr_energy_soda_s", "name": "Sparkling Water · Small" },
-    { "id": "sr_energy_soda_l", "name": "Sparkling Water · Large" },
-    { "id": "sr_energy_sport_s", "name": "Sports Drink · Small" },
-    { "id": "sr_energy_sport_l", "name": "Sports Drink · Large" },
-    { "id": "sr_energy_coffee_xl", "name": "Morning Coffee · Special" },
-    { "id": "sr_energy_milktea_xl", "name": "Bubble Tea · Special" },
-    { "id": "sr_energy_juice_xl", "name": "Fresh Juice · Special" },
-    { "id": "sr_energy_soda_xl", "name": "Sparkling Water · Special" },
-    { "id": "ssr_lip6", "name": "Enchanting Kiss · Lv6" },
-    { "id": "ssr_lip7", "name": "Peerless Beauty · Lv7" },
-    { "id": "ssr_perf6", "name": "Moonlit Mist · Lv6" },
-    { "id": "ssr_perf7", "name": "Eternal Fragrance · Lv7" },
-    { "id": "ssr_study6", "name": "Academic Paper · Lv6" },
-    { "id": "ssr_study7", "name": "Genius Scholar · Lv7" },
-    { "id": "ssr_food6", "name": "Michelin Dinner · Lv6" },
-    { "id": "ssr_food7", "name": "Royal Banquet · Lv7" }
+    {
+      "id": "r_item_lip1",
+      "name": "Lip Makeup · Lv1",
+      "itemId": "lip_1"
+    },
+    {
+      "id": "r_item_lip2",
+      "name": "Lip Makeup · Lv2",
+      "itemId": "lip_2"
+    },
+    {
+      "id": "r_item_lip_rand12",
+      "name": "Lip Makeup Surprise Box · Lv1-2",
+      "itemId": "r_item_lip_rand12"
+    },
+    {
+      "id": "r_item_lip3",
+      "name": "Lip Makeup · Lv3",
+      "itemId": "lip_3"
+    },
+    {
+      "id": "r_item_lip4",
+      "name": "Lip Makeup · Lv4",
+      "itemId": "lip_4"
+    },
+    {
+      "id": "r_item_lip5",
+      "name": "Lip Makeup · Lv5",
+      "itemId": "lip_5"
+    },
+    {
+      "id": "r_item_perf1",
+      "name": "Perfume · Lv1",
+      "itemId": "perf_1"
+    },
+    {
+      "id": "r_item_perf2",
+      "name": "Perfume · Lv2",
+      "itemId": "perf_2"
+    },
+    {
+      "id": "r_item_perf_rand12",
+      "name": "Perfume Surprise Box · Lv1-2",
+      "itemId": "r_item_perf_rand12"
+    },
+    {
+      "id": "r_item_perf3",
+      "name": "Perfume · Lv3",
+      "itemId": "perf_3"
+    },
+    {
+      "id": "r_item_perf4",
+      "name": "Perfume · Lv4",
+      "itemId": "perf_4"
+    },
+    {
+      "id": "r_item_perf5",
+      "name": "Perfume · Lv5",
+      "itemId": "perf_5"
+    },
+    {
+      "id": "r_item_study1",
+      "name": "Study · Lv1",
+      "itemId": "study_1"
+    },
+    {
+      "id": "r_item_study2",
+      "name": "Study · Lv2",
+      "itemId": "study_2"
+    },
+    {
+      "id": "r_item_study_rand12",
+      "name": "Study Surprise Box · Lv1-2",
+      "itemId": "r_item_study_rand12"
+    },
+    {
+      "id": "r_item_study3",
+      "name": "Study · Lv3",
+      "itemId": "study_3"
+    },
+    {
+      "id": "r_item_study4",
+      "name": "Study · Lv4",
+      "itemId": "study_4"
+    },
+    {
+      "id": "r_item_study5",
+      "name": "Study · Lv5",
+      "itemId": "study_5"
+    },
+    {
+      "id": "r_item_food1",
+      "name": "Gourmet · Lv1",
+      "itemId": "food_1"
+    },
+    {
+      "id": "r_item_food2",
+      "name": "Gourmet · Lv2",
+      "itemId": "food_2"
+    },
+    {
+      "id": "r_item_food_rand12",
+      "name": "Gourmet Surprise Box · Lv1-2",
+      "itemId": "r_item_food_rand12"
+    },
+    {
+      "id": "r_item_food3",
+      "name": "Gourmet · Lv3",
+      "itemId": "food_3"
+    },
+    {
+      "id": "r_item_food4",
+      "name": "Gourmet · Lv4",
+      "itemId": "food_4"
+    },
+    {
+      "id": "r_item_food5",
+      "name": "Gourmet · Lv5",
+      "itemId": "food_5"
+    },
+    {
+      "id": "r_item_mix_lv1",
+      "name": "Random Item · Lv1",
+      "itemId": "r_item_mix_lv1"
+    },
+    {
+      "id": "r_item_mix_lv2",
+      "name": "Random Item · Lv2",
+      "itemId": "r_item_mix_lv2"
+    },
+    {
+      "id": "r_item_mix1",
+      "name": "Random Item Pack",
+      "itemId": "r_item_mix1"
+    },
+    {
+      "id": "r_item_mix2",
+      "name": "Surprise Item Pack",
+      "itemId": "r_item_mix2"
+    },
+    {
+      "id": "r_item_lucky_bag",
+      "name": "Heartbeat Lucky Bag · Lv1-3",
+      "itemId": "r_item_lucky_bag"
+    },
+    {
+      "id": "sr_gen_lip4",
+      "name": "Lip Makeup Generator · Lv4",
+      "itemId": "gen_makeup_4"
+    },
+    {
+      "id": "sr_gen_lip5",
+      "name": "Lip Makeup Generator · Lv5",
+      "itemId": "gen_makeup_5"
+    },
+    {
+      "id": "sr_gen_perf4",
+      "name": "Perfume Generator · Lv4",
+      "itemId": "gen_makeup_4"
+    },
+    {
+      "id": "sr_gen_perf5",
+      "name": "Perfume Generator · Lv5",
+      "itemId": "gen_makeup_5"
+    },
+    {
+      "id": "sr_gen_study4",
+      "name": "Study Generator · Lv4",
+      "itemId": "gen_study_4"
+    },
+    {
+      "id": "sr_gen_study5",
+      "name": "Study Generator · Lv5",
+      "itemId": "gen_study_5"
+    },
+    {
+      "id": "sr_gen_food4",
+      "name": "Gourmet Generator · Lv4",
+      "itemId": "gen_study_4"
+    },
+    {
+      "id": "sr_gen_food5",
+      "name": "Gourmet Generator · Lv5",
+      "itemId": "gen_study_5"
+    },
+    {
+      "id": "sr_joker",
+      "name": "Wild Card",
+      "itemId": "joker"
+    },
+    {
+      "id": "sr_scissor",
+      "name": "Time Scissors",
+      "itemId": "scissor"
+    },
+    {
+      "id": "sr_double_gen",
+      "name": "Double Output Card",
+      "itemId": "sr_double_gen"
+    },
+    {
+      "id": "sr_energy_full",
+      "name": "Full Energy Pack",
+      "itemId": "energy_potion_100"
+    },
+    {
+      "id": "sr_clear_lv1",
+      "name": "Broom Upgrade",
+      "itemId": "sr_clear_lv1"
+    },
+    {
+      "id": "sr_reroll_1",
+      "name": "Swap Scroll · Small",
+      "itemId": "sr_reroll_1"
+    },
+    {
+      "id": "sr_reroll_2",
+      "name": "Swap Scroll · Large",
+      "itemId": "sr_reroll_2"
+    },
+    {
+      "id": "sr_lucky_7",
+      "name": "Lucky Seven",
+      "itemId": "sr_lucky_7"
+    },
+    {
+      "id": "sr_frag_pack",
+      "name": "Fragment Gift Pack",
+      "itemId": "sr_frag_pack"
+    },
+    {
+      "id": "sr_gen_refresh",
+      "name": "Generator Refresh Card",
+      "itemId": "sr_gen_refresh"
+    },
+    {
+      "id": "sr_diamond_50",
+      "name": "Diamond Envelope",
+      "itemId": "sr_diamond_50"
+    },
+    {
+      "id": "sr_gold_pack",
+      "name": "Gold Gift Pack",
+      "itemId": "sr_gold_pack"
+    },
+    {
+      "id": "sr_space_clean",
+      "name": "Space Cleaner",
+      "itemId": "sr_space_clean"
+    },
+    {
+      "id": "sr_upgrade_1",
+      "name": "Mini Upgrade Card",
+      "itemId": "sr_upgrade_1"
+    },
+    {
+      "id": "sr_energy_coffee_s",
+      "name": "Morning Coffee · Small",
+      "itemId": "energy_potion_10"
+    },
+    {
+      "id": "sr_energy_coffee_l",
+      "name": "Morning Coffee · Large",
+      "itemId": "energy_potion_30"
+    },
+    {
+      "id": "sr_energy_milktea_s",
+      "name": "Bubble Tea · Small",
+      "itemId": "energy_potion_10"
+    },
+    {
+      "id": "sr_energy_milktea_l",
+      "name": "Bubble Tea · Large",
+      "itemId": "energy_potion_30"
+    },
+    {
+      "id": "sr_energy_juice_s",
+      "name": "Fresh Juice · Small",
+      "itemId": "energy_potion_10"
+    },
+    {
+      "id": "sr_energy_juice_l",
+      "name": "Fresh Juice · Large",
+      "itemId": "energy_potion_30"
+    },
+    {
+      "id": "sr_energy_soda_s",
+      "name": "Sparkling Water · Small",
+      "itemId": "energy_potion_10"
+    },
+    {
+      "id": "sr_energy_soda_l",
+      "name": "Sparkling Water · Large",
+      "itemId": "energy_potion_30"
+    },
+    {
+      "id": "sr_energy_sport_s",
+      "name": "Sports Drink · Small",
+      "itemId": "energy_potion_10"
+    },
+    {
+      "id": "sr_energy_sport_l",
+      "name": "Sports Drink · Large",
+      "itemId": "energy_potion_30"
+    },
+    {
+      "id": "sr_energy_coffee_xl",
+      "name": "Morning Coffee · Special",
+      "itemId": "energy_potion_50"
+    },
+    {
+      "id": "sr_energy_milktea_xl",
+      "name": "Bubble Tea · Special",
+      "itemId": "energy_potion_50"
+    },
+    {
+      "id": "sr_energy_juice_xl",
+      "name": "Fresh Juice · Special",
+      "itemId": "energy_potion_50"
+    },
+    {
+      "id": "sr_energy_soda_xl",
+      "name": "Sparkling Water · Special",
+      "itemId": "energy_potion_50"
+    },
+    {
+      "id": "ssr_lip6",
+      "name": "Enchanting Kiss · Lv6",
+      "itemId": "gen_makeup_6"
+    },
+    {
+      "id": "ssr_lip7",
+      "name": "Peerless Beauty · Lv7",
+      "itemId": "gen_makeup_7"
+    },
+    {
+      "id": "ssr_perf6",
+      "name": "Moonlit Mist · Lv6",
+      "itemId": "gen_makeup_6"
+    },
+    {
+      "id": "ssr_perf7",
+      "name": "Eternal Fragrance · Lv7",
+      "itemId": "gen_makeup_7"
+    },
+    {
+      "id": "ssr_study6",
+      "name": "Academic Paper · Lv6",
+      "itemId": "gen_study_6"
+    },
+    {
+      "id": "ssr_study7",
+      "name": "Genius Scholar · Lv7",
+      "itemId": "gen_study_7"
+    },
+    {
+      "id": "ssr_food6",
+      "name": "Michelin Dinner · Lv6",
+      "itemId": "gen_study_6"
+    },
+    {
+      "id": "ssr_food7",
+      "name": "Royal Banquet · Lv7",
+      "itemId": "gen_study_7"
+    }
   ]
 }

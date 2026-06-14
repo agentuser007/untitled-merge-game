@@ -6,26 +6,23 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { globalBus } from '../core/EventBus';
 import { useConfigStore } from './configStore';
+import { useLoopStore } from './loopStore';
+import { BoardService } from '../services/BoardService';
+import type { DailyOrderState } from '@/types/game';
 
-export interface DailyOrder {
-    id?: string;
-    name: string;
-    required: Array<{
-        itemId: string;
-        count: number;
-    }>;
-    goldReward: number;
-    fulfilled: boolean;
-    minLoop?: number;
-    dialogue?: string;
-}
+export type { DailyOrderState }
 
 export const useDailyOrderStore = defineStore('dailyOrder', () => {
     // --- State ---
-    const activeOrders = ref<DailyOrder[]>([]);
+    const activeOrders = ref<DailyOrderState[]>([]);
     const completedCount = ref(0);
     const lastRollDate = ref('');
     const loopIndex = ref(1);
+    const frozenOrders = ref<DailyOrderState[] | null>(null);
+    const isSettling = computed(() => {
+        const loopStore = useLoopStore();
+        return loopStore.loopStatus === 'settling';
+    });
 
 // NOTE: useConfigStore() is called at the top level of this defineStore setup.
 // This creates an init order dependency — Pinia must be installed before this store is first accessed.
@@ -50,8 +47,21 @@ const configStore = useConfigStore();
     
     const canRefresh = computed(() => 
         completedOrders.value.length === activeOrders.value.length && 
-        activeOrders.value.length > 0
+        activeOrders.value.length > 0 &&
+        !isSettling.value
     );
+
+    const displayOrders = computed<DailyOrderState[]>(() => {
+        if (isSettling.value && frozenOrders.value) {
+            return frozenOrders.value;
+        }
+        return activeOrders.value;
+    });
+
+    const allFrozenCompleted = computed(() => {
+        if (!isSettling.value || !frozenOrders.value) return false;
+        return frozenOrders.value.every(o => o.fulfilled);
+    });
 
     // --- Actions ---
     function init() {
@@ -73,34 +83,56 @@ const configStore = useConfigStore();
         loopIndex.value = idx;
     }
 
-    function rollNewOrders() {
+    function freezeOrders(): void {
+        frozenOrders.value = JSON.parse(JSON.stringify(activeOrders.value));
+    }
+
+    function unfreezeOrders(): void {
+        frozenOrders.value = null;
+    }
+
+    function fulfillFrozenOrder(index: number): boolean {
+        if (!frozenOrders.value) return false;
+        if (index < 0 || index >= frozenOrders.value.length) return false;
+        const order = frozenOrders.value[index];
+        if (order.fulfilled) return false;
+        order.fulfilled = true;
+        completedCount.value++;
+
+        globalBus.emit('dailyOrders:fulfilled', {
+            order,
+            index,
+            goldReward: order.goldReward,
+            reward: order.reward || { gold: order.goldReward }
+        });
+
+        if (allFrozenCompleted.value) {
+            globalBus.emit('dailyOrders:allCompleted');
+        }
+
+        return true;
+    }
+
+    function rollNewOrders(force: boolean = false) {
+        if (isSettling.value) return;
+
         const today = getCurrentDateStr();
-        if (lastRollDate.value === today && activeOrders.value.length > 0) {
-            // Already rolled today
+        if (!force && lastRollDate.value === today && activeOrders.value.length > 0) {
             return;
         }
         
         lastRollDate.value = today;
         
-        // Filter pool by current loop index
         const loopIdx = loopIndex.value;
-        const available = configStore.dailyOrderPool.filter(order =>
-            (order.minLoop || 1) <= loopIdx
-        );
+        const maxActive = configStore.dailyOrderConfig.MAX_ACTIVE || 3;
         
-        // Determine max active orders (default 3)
-        const maxActive = configStore.gameConfig.DAILY_ORDER_MAX_ACTIVE || 3;
-        
-        // Shuffle and select orders
-        const shuffled = [...available];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        activeOrders.value = shuffled.slice(0, maxActive).map(order => ({
-            ...order,
-            fulfilled: false
-        }));
+        const result = BoardService.resolveDailyOrders({
+            orderPool: configStore.dailyOrderPool,
+            loopIndex: loopIdx,
+            maxActive,
+            random: Math.random,
+        });
+        activeOrders.value = result.orders;
         
         completedCount.value = 0;
         
@@ -124,7 +156,8 @@ const configStore = useConfigStore();
         globalBus.emit('dailyOrders:fulfilled', {
             order,
             index,
-            goldReward: order.goldReward
+            goldReward: order.goldReward,
+            reward: order.reward || { gold: order.goldReward }
         });
         
         // Check if all orders are completed
@@ -155,23 +188,43 @@ const configStore = useConfigStore();
     // --- Serialization ---
     function serialize() {
         return {
-            activeOrders: [...activeOrders.value],
+            activeOrders: JSON.parse(JSON.stringify(activeOrders.value)),
             completedCount: completedCount.value,
-            lastRollDate: lastRollDate.value
+            lastRollDate: lastRollDate.value,
+            loopIndex: loopIndex.value,
+            frozenOrders: frozenOrders.value ? JSON.parse(JSON.stringify(frozenOrders.value)) : null
         };
     }
 
-    function deserialize(data: any) {
+    function normalizeDailyOrder(raw: Partial<DailyOrderState>): DailyOrderState {
+        return {
+            id: raw.id ?? '',
+            name: raw.name ?? '',
+            required: raw.required ?? [],
+            goldReward: raw.goldReward ?? 0,
+            minLoop: raw.minLoop ?? 1,
+            dialogue: raw.dialogue ?? '',
+            npcAvatar: raw.npcAvatar,
+            reward: raw.reward,
+            fulfilled: raw.fulfilled ?? false,
+        } satisfies DailyOrderState;
+    }
+
+    function deserialize(data: unknown) {
         if (!data) return;
+        const d = data as { activeOrders?: Partial<DailyOrderState>[]; completedCount?: number; lastRollDate?: string; loopIndex?: number; frozenOrders?: Partial<DailyOrderState>[] | null };
         
-        activeOrders.value = data.activeOrders || [];
-        completedCount.value = data.completedCount ?? 0;
-        lastRollDate.value = data.lastRollDate || getCurrentDateStr();
+        activeOrders.value = (d.activeOrders || []).map(normalizeDailyOrder);
+        completedCount.value = d.completedCount ?? 0;
+        lastRollDate.value = d.lastRollDate || getCurrentDateStr();
+        loopIndex.value = d.loopIndex ?? 1;
+        frozenOrders.value = d.frozenOrders ? d.frozenOrders.map(normalizeDailyOrder) : null;
         
-        // Check if we need to roll new orders
-        const today = getCurrentDateStr();
-        if (lastRollDate.value !== today) {
-            rollNewOrders();
+        if (!isSettling.value) {
+            const today = getCurrentDateStr();
+            if (lastRollDate.value !== today) {
+                rollNewOrders();
+            }
         }
     }
 
@@ -181,19 +234,26 @@ const configStore = useConfigStore();
         completedCount,
         lastRollDate,
         loopIndex,
+        frozenOrders,
+        isSettling,
         
         // Computed
         completedOrders,
         pendingOrders,
         completionRate,
         canRefresh,
+        displayOrders,
+        allFrozenCompleted,
         
         // Actions
         init,
         rollNewOrders,
         fulfillOrder,
+        fulfillFrozenOrder,
         checkOrder,
         setLoopIndex,
+        freezeOrders,
+        unfreezeOrders,
         
         // Serialization
         serialize,

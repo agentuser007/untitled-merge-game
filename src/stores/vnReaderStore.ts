@@ -11,27 +11,20 @@ import { ref, computed } from 'vue';
 import { globalBus } from '../core/EventBus';
 import { useConfigStore } from './configStore';
 import { useI18nStore } from './i18nStore';
+import type { VNReaderSerializeData } from '../types/serialize';
 
-// --- Character map (mirrors legacy CHARACTER_MAP) ---
+// --- Character info derived from configStore.characterProfiles ---
 export interface CharacterInfo {
     avatar: string;
     color: string;
     background: string;
+    name: string;
+    nameEn: string;
 }
-
-const CHARACTER_MAP: Record<string, CharacterInfo> = {
-    '林墨白': { avatar: 'assets/avatar/morven_no_bg.png', color: '#7B68EE', background: 'assets/avatar/morven_bg.webp' },
-    'Morven':  { avatar: 'assets/avatar/morven_no_bg.png', color: '#7B68EE', background: 'assets/avatar/morven_bg.webp' },
-    'Daniel':  { avatar: 'assets/avatar/daniel_no_bg.png', color: '#4169E1', background: 'assets/avatar/daniel_bg.webp' },
-    '司徒渊': { avatar: 'assets/avatar/vincent_no_bg.png', color: '#483D8B', background: 'assets/avatar/vincent_bg.webp' },
-    'Vincent': { avatar: 'assets/avatar/vincent_no_bg.png', color: '#483D8B', background: 'assets/avatar/vincent_bg.webp' },
-    '陆之昂': { avatar: 'assets/avatar/leo_no_bg.png', color: '#FF6347', background: 'assets/avatar/leo_bg.webp' },
-    'Leo':     { avatar: 'assets/avatar/leo_no_bg.png', color: '#FF6347', background: 'assets/avatar/leo_bg.webp' },
-};
 
 // --- Story data types ---
 export interface VNLine {
-    speaker: string | null;
+    speakerId: string | null;
     text: string;
     expression?: string;
 }
@@ -39,19 +32,44 @@ export interface VNLine {
 export interface VNStory {
     title: string;
     lines: VNLine[];
-    text?: string; // Fallback for stories without lines array
+    text?: string;
 }
 
 export interface VNCGEntry {
     cgId: string;
     title: string;
-    maleLead: string;
+    maleLeadId: string;
     stories: VNStory[];
 }
 
 export interface VNHistoryEntry {
     speaker: string;
+    speakerId: string | null;
     text: string;
+}
+
+// --- Helper: look up character info from configStore ---
+function getCharacterInfo(characterId: string | null): CharacterInfo | null {
+    if (!characterId) return null;
+    const configStore = useConfigStore();
+    const profile = configStore.characterProfiles[characterId];
+    if (!profile) return null;
+    return {
+        avatar: profile.avatar || '',
+        color: profile.color || '#888',
+        background: profile.background || '',
+        name: profile.name || characterId,
+        nameEn: profile.nameEn || profile.name || characterId,
+    };
+}
+
+function getSpeakerDisplayName(speakerId: string | null): string {
+    if (!speakerId) return '';
+    const configStore = useConfigStore();
+    const i18nStore = useI18nStore();
+    const profile = configStore.characterProfiles[speakerId];
+    if (!profile) return speakerId;
+    return i18nStore.locale === 'en' ? (profile.nameEn || profile.name || speakerId) : (profile.name || speakerId);
 }
 
 export const useVNReaderStore = defineStore('vnReader', () => {
@@ -92,7 +110,7 @@ export const useVNReaderStore = defineStore('vnReader', () => {
 
     const currentCharacterInfo = computed<CharacterInfo | null>(() => {
         if (!currentCG.value) return null;
-        return CHARACTER_MAP[currentCG.value.maleLead] || null;
+        return getCharacterInfo(currentCG.value.maleLeadId);
     });
 
     const speakerInfo = computed<{ name: string; color: string; isNarrator: boolean; background: string | null }>(() => {
@@ -101,10 +119,10 @@ export const useVNReaderStore = defineStore('vnReader', () => {
         if (!line) {
             return { name: '', color: '#888', isNarrator: false, background: null };
         }
-        if (line.speaker) {
-            const ci = CHARACTER_MAP[line.speaker];
+        if (line.speakerId) {
+            const ci = getCharacterInfo(line.speakerId);
             return {
-                name: line.speaker,
+                name: getSpeakerDisplayName(line.speakerId),
                 color: ci?.color || '#888',
                 isNarrator: false,
                 background: ci?.background || null,
@@ -119,12 +137,10 @@ export const useVNReaderStore = defineStore('vnReader', () => {
     });
 
     const backgroundImage = computed<string | null>(() => {
-        // If speaker changed and has a background, use it
         if (currentSpeaker.value) {
-            const ci = CHARACTER_MAP[currentSpeaker.value];
+            const ci = getCharacterInfo(currentSpeaker.value);
             if (ci?.background) return ci.background;
         }
-        // Fallback to male lead background
         return currentCharacterInfo.value?.background || null;
     });
 
@@ -140,7 +156,7 @@ export const useVNReaderStore = defineStore('vnReader', () => {
         storyIndex.value = storyIndexParam;
         lines.value = story.lines && story.lines.length
             ? story.lines
-            : (story.text ? [{ speaker: null, text: story.text }] : []);
+            : (story.text ? [{ speakerId: null, text: story.text }] : []);
         currentIndex.value = 0;
         autoMode.value = false;
         skipMode.value = false;
@@ -151,7 +167,6 @@ export const useVNReaderStore = defineStore('vnReader', () => {
         isOpen.value = true;
         showingTitle.value = true;
 
-        // Emit event for BGM switching (handled by overlay component)
         globalBus.emit('vn:opened', { ssrId: ssrIdParam, storyIndex: storyIndexParam });
     }
 
@@ -164,14 +179,12 @@ export const useVNReaderStore = defineStore('vnReader', () => {
         showingTitle.value = false;
         currentSpeaker.value = null;
 
-        // Emit event for BGM restoration
         globalBus.emit('vn:closed');
     }
 
     function advance() {
         if (showingHistory.value) return;
         if (isTyping.value) {
-            // Signal to skip typing — the component handles this
             isTyping.value = false;
             return;
         }
@@ -186,11 +199,24 @@ export const useVNReaderStore = defineStore('vnReader', () => {
         ended.value = true;
         autoMode.value = false;
         skipMode.value = false;
-        // Add end entry to history
         history.value.push({
             speaker: i18nStore.t('vn_reader.end'),
+            speakerId: null,
             text: i18nStore.t('vn_reader.chapterEnded'),
         });
+
+        const configStore = useConfigStore();
+        const cgStories = configStore.cgStories || {};
+        const currentEntry = Object.values(cgStories).find(
+            (entry): entry is VNCGEntry => (entry as VNCGEntry).cgId === ssrId.value
+        );
+        if (currentEntry && currentEntry.maleLeadId) {
+            globalBus.emit('affection:vnCompleted', {
+                cgId: ssrId.value,
+                maleLeadId: currentEntry.maleLeadId,
+                isSSR: true
+            });
+        }
     }
 
     function toggleAuto() {
@@ -213,34 +239,28 @@ export const useVNReaderStore = defineStore('vnReader', () => {
 
     function onLineShown(line: VNLine) {
         const i18nStore = useI18nStore();
-        // Update current speaker for background tracking
-        if (line.speaker && line.speaker !== currentSpeaker.value) {
-            currentSpeaker.value = line.speaker;
+        if (line.speakerId && line.speakerId !== currentSpeaker.value) {
+            currentSpeaker.value = line.speakerId;
         }
-        // Add to history
         history.value.push({
-            speaker: line.speaker || i18nStore.t('vn_reader.narrator'),
+            speaker: line.speakerId ? getSpeakerDisplayName(line.speakerId) : i18nStore.t('vn_reader.narrator'),
+            speakerId: line.speakerId,
             text: line.text,
         });
     }
 
-    function getCharacterColor(speakerName: string): string {
-        const ci = CHARACTER_MAP[speakerName];
+    function getCharacterColor(speakerId: string): string {
+        const ci = getCharacterInfo(speakerId);
         return ci?.color || '#888';
     }
 
     // --- Subscribe to events ---
-    // HMR LIMITATION: globalBus.on() listeners registered here will stack on HMR updates.
-    // EventBus.on() returns the handler ref (not an unsubscribe fn), so per-listener HMR cleanup
-    // would require storing each handler ref and calling globalBus.off() with it on dispose.
-    // For now, this is a known dev-only issue — full page reload clears it.
-    globalBus.on('cg:readRequested', (data: any) => {
+    globalBus.on('cg:readRequested', (data: { cgId: string }) => {
         if (data?.cgId) {
-            // Find the ssrId that matches this cgId
             const configStore = useConfigStore();
             const entries = configStore.cgStories;
             for (const [key, value] of Object.entries(entries)) {
-                if ((value as any).cgId === data.cgId) {
+                if ((value as VNCGEntry).cgId === data.cgId) {
                     open(key, 0);
                     return;
                 }
@@ -264,29 +284,28 @@ export const useVNReaderStore = defineStore('vnReader', () => {
         };
     }
 
-    function deserialize(data: any) {
+    function deserialize(data: unknown) {
         if (!data) return;
-        // Don't restore isOpen — the overlay should be closed on load
-        ssrId.value = data.ssrId || '';
-        storyIndex.value = data.storyIndex || 0;
-        currentIndex.value = data.currentIndex ?? 0;
-        autoMode.value = data.autoMode ?? false;
-        skipMode.value = data.skipMode ?? false;
-        ended.value = data.ended ?? false;
-        showingHistory.value = data.showingHistory ?? false;
-        currentSpeaker.value = data.currentSpeaker || null;
-        history.value = data.history || [];
+        const d = data as VNReaderSerializeData;
+        ssrId.value = d.ssrId || '';
+        storyIndex.value = d.storyIndex || 0;
+        currentIndex.value = d.currentIndex ?? 0;
+        autoMode.value = d.autoMode ?? false;
+        skipMode.value = d.skipMode ?? false;
+        ended.value = d.ended ?? false;
+        showingHistory.value = d.showingHistory ?? false;
+        currentSpeaker.value = d.currentSpeaker || null;
+        history.value = d.history || [];
 
-        // Reconstruct lines from config data if we have a valid ssrId
-        if (data.ssrId && data.isOpen) {
+        if (d.ssrId && d.isOpen) {
             const configStore = useConfigStore();
-            const cg = configStore.cgStories[data.ssrId] as VNCGEntry | undefined;
+            const cg = configStore.cgStories[d.ssrId] as VNCGEntry | undefined;
             if (cg) {
-                const story = cg.stories[data.storyIndex || 0];
+                const story = cg.stories[d.storyIndex || 0];
                 if (story) {
                     lines.value = story.lines && story.lines.length
                         ? story.lines
-                        : (story.text ? [{ speaker: null, text: story.text }] : []);
+                        : (story.text ? [{ speakerId: null, text: story.text }] : []);
                     isOpen.value = true;
                 }
             }

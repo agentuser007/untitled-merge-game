@@ -74,7 +74,7 @@ export function useEffects() {
         return layer;
     }
 
-    function showToast(message: string, type: 'info' | 'sr' | 'ssr' = 'info'): void {
+    function showToast(message: string, type: 'info' | 'sr' | 'ssr' | 'error' = 'info'): void {
         let toastRoot = document.getElementById('toast-root');
         if (!toastRoot) {
             toastRoot = document.createElement('div');
@@ -92,20 +92,28 @@ export function useEffects() {
         } else if (type === 'sr') {
             toast.style.background = 'linear-gradient(135deg, rgba(155,89,182,0.9), rgba(142,68,173,0.9))';
             audio.playSound('pop');
+        } else if (type === 'error') {
+            toast.style.background = 'rgba(211, 47, 47, 0.9)'; // Dark Red for errors
         } else {
             toast.style.background = 'rgba(0,0,0,0.8)';
         }
         
+        const activeToasts = toastRoot.querySelectorAll('.daily-toast.show');
+        const offset = activeToasts.length * 48;
+        
+        toast.style.transform = `translateX(-50%) translateY(${offset - 20}px)`;
         toastRoot.appendChild(toast);
         
         const rafId = requestAnimationFrame(() => {
             toast.classList.add('show');
+            toast.style.transform = `translateX(-50%) translateY(${offset}px)`;
         });
         pendingRAFs.add(rafId);
         
         const t1 = setTimeout(() => {
             pendingTimers.delete(t1);
             toast.classList.remove('show');
+            toast.style.transform = `translateX(-50%) translateY(${offset - 20}px)`;
             const t2 = setTimeout(() => { pendingTimers.delete(t2); toast.remove(); }, 300);
             pendingTimers.add(t2);
         }, 2000);
@@ -131,6 +139,7 @@ export function useEffects() {
             if (!p) continue;
             
             const angle = (Math.PI * 2 * i) / count;
+            // exempt: pure visual — no game state impact
             const dist = 30 + Math.random() * 30;
             p.textContent = emoji;
             p.style.left = (rect.left + rect.width / 2) + 'px';
@@ -157,13 +166,14 @@ export function useEffects() {
         const heart = document.createElement('div');
         heart.className = 'heart-projectile';
         heart.textContent = '❤️';
-        heart.style.left = srcRect.left + srcRect.width / 2 + 'px';
-        heart.style.top = srcRect.top + 'px';
+        const startX = srcRect.left + srcRect.width / 2;
+        const startY = srcRect.top;
+        heart.style.left = startX + 'px';
+        heart.style.top = startY + 'px';
+        heart.style.willChange = 'transform';
         
         particleLayer.appendChild(heart);
 
-        const startX = parseFloat(heart.style.left);
-        const startY = parseFloat(heart.style.top);
         const endX = tgtRect.left + tgtRect.width / 2;
         const endY = tgtRect.top + tgtRect.height / 2;
         
@@ -176,12 +186,10 @@ export function useEffects() {
             
             const easeProgress = 1 - Math.pow(1 - progress, 3);
             
-            const currentX = startX + (endX - startX) * easeProgress;
-            const currentY = startY + (endY - startY) * easeProgress;
+            const dx = (endX - startX) * easeProgress;
+            const dy = (endY - startY) * easeProgress;
             
-            heart.style.left = currentX + 'px';
-            heart.style.top = currentY + 'px';
-            heart.style.transform = `rotate(${progress * 360}deg)`;
+            heart.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${progress * 360}deg)`;
             
             if (progress < 1) {
                 const rafId = requestAnimationFrame(animate);

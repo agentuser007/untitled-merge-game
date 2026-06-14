@@ -5,21 +5,15 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { globalBus } from '../core/EventBus';
+import type { InventoryItemMeta, InventoryItem as GameInventoryItem } from '../types/game';
 
-export interface InventoryItem {
-    id: string;
-    name: string;
-    icon: string;
-    description: string;
-    effect: string;
-    value: any;
-    rarity: string;
-}
+export type InventoryItem = GameInventoryItem;
 
 export const useInventoryStore = defineStore('inventory', () => {
     // --- State ---
     const slots = ref<Record<string, number>>({}); // item_id -> count
-    const maxSlots = ref(20); // Default max slots
+    const maxSlots = ref<number>(Infinity); // Unlimited capacity
+    const itemMetadata = ref<Record<string, InventoryItemMeta>>({}); // item_id -> effect metadata
 
     // --- Computed ---
     const totalItems = computed(() => {
@@ -30,31 +24,24 @@ export const useInventoryStore = defineStore('inventory', () => {
         return Object.keys(slots.value).filter(id => slots.value[id] > 0);
     });
     
-    const isFull = computed(() => {
-        return totalItems.value >= maxSlots.value;
-    });
+    const isFull = computed(() => false);
     
-    const availableSlots = computed(() => {
-        return Math.max(0, maxSlots.value - totalItems.value);
-    });
+    const availableSlots = computed((): number => Infinity);
     
     const isEmpty = computed(() => {
         return totalItems.value === 0;
     });
 
     // --- Actions ---
-    function addItem(item: InventoryItem | string, count: number = 1): boolean {
+    function addItem(item: InventoryItem | string, count: number = 1, meta?: InventoryItemMeta): boolean {
         const itemId = typeof item === 'string' ? item : item.id;
-        const isNewSlot = !slots.value[itemId] || slots.value[itemId] <= 0;
-        const slotsNeeded = isNewSlot ? 1 : 0;
-        if (totalItems.value + slotsNeeded > maxSlots.value) {
-            globalBus.emit('inventory:full', {
-                availableSlots: availableSlots.value
-            });
-            return false;
-        }
         
         slots.value[itemId] = (slots.value[itemId] || 0) + count;
+
+        // Store metadata if provided (only when count goes from 0 to positive)
+        if (meta && slots.value[itemId] === count) {
+            itemMetadata.value[itemId] = meta;
+        }
         
         // Emit event for UI updates
         globalBus.emit('inventory:itemAdded', {
@@ -74,6 +61,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         slots.value[itemId] -= count;
         if (slots.value[itemId] <= 0) {
             delete slots.value[itemId];
+            // Clean up metadata when count reaches 0
+            delete itemMetadata.value[itemId];
         }
         
         // Emit event for UI updates
@@ -90,14 +79,19 @@ export const useInventoryStore = defineStore('inventory', () => {
         if (!hasItem(itemId)) {
             return false;
         }
+
+        // Capture metadata before removal
+        const meta = itemMetadata.value[itemId];
         
         // Remove one item
         removeItem(itemId, 1);
         
-        // Emit event for item usage
+        // Emit event for item usage — include effect metadata
         globalBus.emit('inventory:itemUsed', {
             itemId,
-            targetCellIndex
+            targetCellIndex,
+            effect: meta?.effect,
+            value: meta?.value,
         });
         
         return true;
@@ -111,23 +105,20 @@ export const useInventoryStore = defineStore('inventory', () => {
         return slots.value[itemId] || 0;
     }
 
+    function getItemMeta(itemId: string): InventoryItemMeta | undefined {
+        return itemMetadata.value[itemId];
+    }
+
     function clear() {
         slots.value = {};
+        itemMetadata.value = {};
         
         // Emit event for UI updates
         globalBus.emit('inventory:cleared');
     }
 
-    function expandSlots(additionalSlots: number): boolean {
-        // In a real implementation, we would check if the player can afford this
-        maxSlots.value += additionalSlots;
-        
-        // Emit event for UI updates
-        globalBus.emit('inventory:expanded', {
-            maxSlots: maxSlots.value,
-            additionalSlots
-        });
-        
+    function expandSlots(_additionalSlots: number): boolean {
+        // No-op: capacity is unlimited
         return true;
     }
 
@@ -145,21 +136,38 @@ export const useInventoryStore = defineStore('inventory', () => {
     function serialize() {
         return {
             slots: { ...slots.value },
-            maxSlots: maxSlots.value
+            maxSlots: maxSlots.value,
+            itemMetadata: { ...itemMetadata.value }
         };
     }
 
-    function deserialize(data: any) {
+    function deserialize(data: unknown) {
         if (!data) return;
+        const d = data as { slots?: Record<string, number>; maxSlots?: number; itemMetadata?: Record<string, InventoryItemMeta> };
         
-        slots.value = data.slots || {};
-        maxSlots.value = data.maxSlots || 20;
+        slots.value = d.slots || {};
+        maxSlots.value = d.maxSlots != null ? d.maxSlots : Infinity;
+        itemMetadata.value = d.itemMetadata || {};
+
+        // Migration: convert old "energy_potion" to "energy_potion_20"
+        if (slots.value['energy_potion']) {
+            const count = slots.value['energy_potion'];
+            delete slots.value['energy_potion'];
+            slots.value['energy_potion_20'] =
+                (slots.value['energy_potion_20'] || 0) + count;
+            delete itemMetadata.value['energy_potion'];
+            itemMetadata.value['energy_potion_20'] = {
+                effect: 'add_energy_item',
+                value: { energy: 20 },
+            };
+        }
     }
 
     return {
         // State
         slots,
         maxSlots,
+        itemMetadata,
         
         // Computed
         totalItems,
@@ -174,6 +182,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         useItem,
         hasItem,
         getCount,
+        getItemMeta,
         clear,
         expandSlots,
         getItemIds,

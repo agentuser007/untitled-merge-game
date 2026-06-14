@@ -5,6 +5,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { globalBus } from '../core/EventBus';
+import type { DialogueSerializeData } from '../types/serialize';
 
 export const useDialogueStore = defineStore('dialogue', () => {
     let pendingTimer: ReturnType<typeof setTimeout> | null = null;
@@ -134,16 +135,16 @@ export const useDialogueStore = defineStore('dialogue', () => {
         };
     }
 
-    function deserialize(data: any) {
+    function deserialize(data: unknown) {
         if (!data) return;
-        
-        isOpen.value = data.isOpen ?? false;
-        npcName.value = data.npcName || '';
-        npcText.value = data.npcText || '';
-        playerText.value = data.playerText || '';
-        portraitUrl.value = data.portraitUrl || '';
-        portraitEmoji.value = data.portraitEmoji || '';
-        dialogueQueue.value = data.dialogueQueue || [];
+        const d = data as DialogueSerializeData;
+        isOpen.value = d.isOpen ?? false;
+        npcName.value = d.npcName || '';
+        npcText.value = d.npcText || '';
+        playerText.value = d.playerText || '';
+        portraitUrl.value = d.portraitUrl || '';
+        portraitEmoji.value = d.portraitEmoji || '';
+        dialogueQueue.value = d.dialogueQueue || [];
     }
 
     return {

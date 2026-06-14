@@ -14,7 +14,6 @@ vi.mock('../../stores/i18nStore', () => ({
     locale: 'zh',
     texts: {},
     emojis: {},
-    uiConfig: {},
     loaded: true,
     supportedLocales: ['zh', 'en'],
   }))

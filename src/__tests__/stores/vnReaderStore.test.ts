@@ -62,7 +62,7 @@ describe('vnReaderStore — H12: auto/skip mutual exclusion', () => {
   })
 
   it('advance increments currentIndex when not typing', () => {
-    store.lines = [{ speaker: 'A', text: 'Hello' }, { speaker: 'B', text: 'World' }]
+    store.lines = [{ speakerId: 'morven', text: 'Hello' }, { speakerId: 'daniel', text: 'World' }]
     store.currentIndex = 0
     store.isTyping = false
     store.advance()

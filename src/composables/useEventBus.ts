@@ -25,7 +25,7 @@ export function useEventBus() {
   function once<K extends EventKey>(event: K, handler: GameEvents[K] extends void ? () => void : (data: GameEvents[K]) => void): Function;
   function once(event: string, handler: Function): Function;
   function once(event: string, handler: Function): Function {
-    const wrappedHandler = (...args: any[]) => {
+    const wrappedHandler = (...args: unknown[]) => {
       off(event, wrappedHandler);
       handler(...args);
     };
@@ -45,8 +45,8 @@ export function useEventBus() {
   function emit<K extends EventKey>(
     ...args: GameEvents[K] extends void ? [event: K] : [event: K, data: GameEvents[K]]
   ): void;
-  function emit(event: string, data?: any): void;
-  function emit(event: string, data?: any): void {
+  function emit(event: string, data?: unknown): void;
+  function emit(event: string, data?: unknown): void {
     globalBus.emit(event, data);
   }
 

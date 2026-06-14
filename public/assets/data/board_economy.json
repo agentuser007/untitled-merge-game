@@ -1,0 +1,8 @@
+{
+  "sellPriceBoost": 1.5,
+  "luckyMergeChance": 0.3,
+  "dailyGoldBoost": 1.5,
+  "achievementTokenBonus": 2,
+  "energyDiscountFreeChance": 0.5,
+  "perfumeBoostChains": ["perfume", "lips"]
+}

@@ -4,6 +4,7 @@ interface DragOptions {
   onDragStart?: (index: number, event: PointerEvent) => void;
   onDragMove?: (deltaX: number, deltaY: number, event: PointerEvent) => void;
   onDragEnd?: (fromIndex: number, toIndex: number) => void;
+  onDropOnBackpack?: (fromIndex: number) => void;
   onTap?: (index: number, event: PointerEvent) => void;
   threshold?: number;
 }
@@ -38,6 +39,10 @@ export function useDrag(options: DragOptions): DragReturn {
     }
     document.querySelectorAll('.grid-cell.dragging').forEach(c => c.classList.remove('dragging'));
     document.querySelectorAll('.grid-cell.drop-target').forEach(c => c.classList.remove('drop-target'));
+    const backpackBtn = document.getElementById('floating-backpack-btn');
+    const backpackContainer = document.querySelector('.floating-backpack-container');
+    if (backpackBtn) backpackBtn.classList.remove('drop-target');
+    if (backpackContainer) backpackContainer.classList.remove('drop-target');
   }
 
   const onPointerDown = (index: number, event: PointerEvent) => {
@@ -72,6 +77,7 @@ export function useDrag(options: DragOptions): DragReturn {
         dragGhostEl.value.textContent = emojiEl?.textContent || '';
         dragGhostEl.value.style.left = `${event.clientX}px`;
         dragGhostEl.value.style.top = `${event.clientY}px`;
+        dragGhostEl.value.style.pointerEvents = 'none';
         document.body.appendChild(dragGhostEl.value);
       }
     }
@@ -83,11 +89,21 @@ export function useDrag(options: DragOptions): DragReturn {
       }
 
       document.querySelectorAll('.grid-cell.drop-target').forEach(c => c.classList.remove('drop-target'));
+      const backpackBtn = document.getElementById('floating-backpack-btn');
+      const backpackContainer = document.querySelector('.floating-backpack-container');
+      if (backpackBtn) backpackBtn.classList.remove('drop-target');
+      if (backpackContainer) backpackContainer.classList.remove('drop-target');
+
       const target = document.elementFromPoint(event.clientX, event.clientY);
       if (target) {
         const gc = target.closest('.grid-cell') as HTMLElement | null;
         if (gc && parseInt(gc.dataset.index || '-1') !== dragSourceIndex.value) {
           gc.classList.add('drop-target');
+        }
+
+        const bp = target.closest('#floating-backpack-btn') || target.closest('.floating-backpack-container');
+        if (bp) {
+          bp.classList.add('drop-target');
         }
       }
 
@@ -104,13 +120,23 @@ export function useDrag(options: DragOptions): DragReturn {
     if (isDragging.value) {
       clearDragVisuals();
 
-      if (onDragEnd && dragSourceIndex.value !== null) {
+      if (dragSourceIndex.value !== null) {
         const targetElement = document.elementFromPoint(event.clientX, event.clientY);
-        const targetCell = targetElement?.closest('.grid-cell');
-        const targetIndex = targetCell ? parseInt(targetCell.getAttribute('data-index') || '-1') : -1;
+        
+        // Check drop on backpack
+        const isBackpackDrop = targetElement?.closest('#floating-backpack-btn') || 
+                               targetElement?.closest('#inventory-sheet') || 
+                               targetElement?.closest('.floating-backpack-container');
 
-        if (targetIndex !== -1 && targetIndex !== dragSourceIndex.value) {
-          onDragEnd(dragSourceIndex.value, targetIndex);
+        if (isBackpackDrop && options.onDropOnBackpack) {
+          options.onDropOnBackpack(dragSourceIndex.value);
+        } else if (onDragEnd) {
+          const targetCell = targetElement?.closest('.grid-cell');
+          const targetIndex = targetCell ? parseInt(targetCell.getAttribute('data-index') || '-1') : -1;
+
+          if (targetIndex !== -1 && targetIndex !== dragSourceIndex.value) {
+            onDragEnd(dragSourceIndex.value, targetIndex);
+          }
         }
       }
     } else if (onTap && dragSourceIndex.value !== null) {

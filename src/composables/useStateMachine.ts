@@ -29,7 +29,7 @@ export function useStateMachine(config: StateMachineConfig) {
     /**
      * Send an event to the state machine
      */
-    function send(event: string, data?: any): boolean {
+    function send(event: string, data?: unknown): boolean {
         const result = fsm.send(event, data);
         if (result) {
             currentState.value = fsm.getState();

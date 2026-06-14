@@ -32,7 +32,7 @@ export class EventBus {
   once<K extends EventKey>(event: K, fn: TypedHandler<K>): TypedHandler<K>;
   once(event: string, fn: Function): Function;
   once(event: string, fn: Function): Function {
-    const wrapper = ((...args: any[]) => {
+    const wrapper = ((...args: unknown[]) => {
       this.off(event, wrapper);
       fn(...args);
     });
@@ -53,8 +53,8 @@ export class EventBus {
   emit<K extends EventKey>(
     ...args: GameEvents[K] extends void ? [event: K] : [event: K, data: GameEvents[K]]
   ): void;
-  emit(event: string, data?: any): void;
-  emit(event: string, data?: any): void {
+  emit(event: string, data?: unknown): void;
+  emit(event: string, data?: unknown): void {
     if (!this.listeners[event]) return;
     const handlers = [...this.listeners[event]];
     for (const fn of handlers) {
@@ -63,6 +63,12 @@ export class EventBus {
       } catch (err) {
         console.error(`[EventBus] Error in handler for "${event}":`, err);
       }
+    }
+  }
+
+  emitLogicEvents(events: Array<{ type: string; payload?: unknown }>): void {
+    for (const e of events) {
+      this.emit(e.type as keyof GameEvents, e.payload);
     }
   }
 

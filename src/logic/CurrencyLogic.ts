@@ -2,7 +2,7 @@
 // CurrencyLogic.ts — Pure Currency Business Logic
 // ============================================================
 
-import { globalBus } from '../core/EventBus';
+import type { LogicEvent } from './BoardLogic';
 
 export interface CurrencyChangedEvent {
   gold: number;
@@ -33,55 +33,63 @@ export class CurrencyLogic {
     this.diamonds = initialDiamonds;
   }
 
-  addGold(amount: number): void {
+  addGold(amount: number): LogicEvent[] {
     this.gold += amount;
-    this._emitChanged();
-    globalBus.emit('currency:flash', { type: 'gold', effect: 'add' } as CurrencyFlashEvent);
-    globalBus.emit('currency:goldEarned', { amount } as CurrencyGoldEarnedEvent);
+    return [
+      { type: 'currency:changed', payload: { gold: this.gold, diamonds: this.diamonds } },
+      { type: 'currency:flash', payload: { type: 'gold', effect: 'add' } },
+      { type: 'currency:goldEarned', payload: { amount } },
+    ];
   }
 
-  setGold(value: number): void {
+  setGold(value: number): LogicEvent[] {
     this.gold = value;
-    this._emitChanged();
+    return [
+      { type: 'currency:changed', payload: { gold: this.gold, diamonds: this.diamonds } },
+    ];
   }
 
-  spendGold(amount: number): boolean {
+  spendGold(amount: number): { success: boolean; events: LogicEvent[] } {
     if (this.gold < amount) {
-      globalBus.emit('currency:insufficient', { type: 'gold', current: this.gold, needed: amount } as CurrencyInsufficientEvent);
-      return false;
+      return { success: false, events: [{ type: 'currency:insufficient', payload: { type: 'gold', current: this.gold, needed: amount } }] };
     }
     this.gold -= amount;
-    this._emitChanged();
-    globalBus.emit('currency:flash', { type: 'gold', effect: 'spend' } as CurrencyFlashEvent);
-    return true;
+    return {
+      success: true,
+      events: [
+        { type: 'currency:changed', payload: { gold: this.gold, diamonds: this.diamonds } },
+        { type: 'currency:flash', payload: { type: 'gold', effect: 'spend' } },
+      ],
+    };
   }
 
   canAffordGold(amount: number): boolean {
     return this.gold >= amount;
   }
 
-  addDiamonds(amount: number): void {
+  addDiamonds(amount: number): LogicEvent[] {
     this.diamonds += amount;
-    this._emitChanged();
-    globalBus.emit('currency:flash', { type: 'diamonds', effect: 'add' } as CurrencyFlashEvent);
+    return [
+      { type: 'currency:changed', payload: { gold: this.gold, diamonds: this.diamonds } },
+      { type: 'currency:flash', payload: { type: 'diamonds', effect: 'add' } },
+    ];
   }
 
-  spendDiamonds(amount: number): boolean {
+  spendDiamonds(amount: number): { success: boolean; events: LogicEvent[] } {
     if (this.diamonds < amount) {
-      globalBus.emit('currency:insufficient', { type: 'diamonds', current: this.diamonds, needed: amount } as CurrencyInsufficientEvent);
-      return false;
+      return { success: false, events: [{ type: 'currency:insufficient', payload: { type: 'diamonds', current: this.diamonds, needed: amount } }] };
     }
     this.diamonds -= amount;
-    this._emitChanged();
-    globalBus.emit('currency:flash', { type: 'diamonds', effect: 'spend' } as CurrencyFlashEvent);
-    return true;
+    return {
+      success: true,
+      events: [
+        { type: 'currency:changed', payload: { gold: this.gold, diamonds: this.diamonds } },
+        { type: 'currency:flash', payload: { type: 'diamonds', effect: 'spend' } },
+      ],
+    };
   }
 
   canAffordDiamonds(amount: number): boolean {
     return this.diamonds >= amount;
-  }
-
-  _emitChanged(): void {
-    globalBus.emit('currency:changed', { gold: this.gold, diamonds: this.diamonds } as CurrencyChangedEvent);
   }
 }

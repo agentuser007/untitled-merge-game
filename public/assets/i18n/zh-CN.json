@@ -26,7 +26,7 @@
     "chainFood": "美食系列",
     "tabItems": "物品图鉴",
     "tabGacha": "卡牌图鉴",
-    "tabFragments": "碎片",
+    "tabFragments": "记忆回廊",
     "raritySSR": "👑 SSR 传说",
     "raritySR": "💜 SR 稀有",
     "rarityR": "💙 R 普通",
@@ -49,7 +49,18 @@
     "chainCompleteBadge": "✅ 已完成",
     "rewardDiamonds": "💎+{amount}",
     "rewardEnergy": "⚡+{amount}",
-    "rewardGold": "🪙+{amount}"
+    "rewardGold": "🪙+{amount}",
+    "filterAll": "全部",
+    "memoryCorridor": "记忆回廊",
+    "chapterUnlocked": "✅ 已解锁",
+    "chapterCanUnlock": "🔓 可解锁",
+    "chapterLocked": "🔒 未解锁",
+    "unlockStoryBtn": "✨ 解锁 ({cost}🧩)",
+    "reviewStoryBtn": "📖 回顾",
+    "allChaptersUnlocked": "✅ 全部章节已解锁",
+    "needFragments": "需要 {cost} 碎片",
+    "canUnlockHint": "✨ 可解锁",
+    "chaptersCount": "📖 {current}/{total} 章节"
   },
   "dailyOrder": {
     "panelTitle": "日常跑腿",
@@ -58,7 +69,9 @@
     "completed": "✅ 已完成",
     "refreshed": "新的日常订单已刷新！",
     "orderComplete": "订单完成！",
-    "fulfill": "完成"
+    "fulfill": "完成",
+    "frozen": "⏸️ 日常订单已冻结",
+    "endLoop": "结束这一轮"
   },
   "dialogue": {
     "tapContinue": "继续 ▸"
@@ -257,6 +270,11 @@
     "currentEffect": "当前：{effect}",
     "nextEffect": "→ 下一级：{effect}"
   },
+  "map": {
+    "title": "学园地图",
+    "replayStory": "重播剧情",
+    "archived": "该棋盘数据已归档，无法操作"
+  },
   "nav": {
     "recycle": "回收",
     "inventory": "背包",
@@ -348,6 +366,40 @@
     "chapterEnded": "章节已结束，点击任意处返回"
   },
   "loading": "加载中...",
+  "affection": {
+    "panelTitle": "💕 好感度",
+    "panelSub": "与他的关系",
+    "level_0": "陌生人",
+    "level_1": "熟识",
+    "level_2": "好友",
+    "level_3": "暧昧",
+    "level_4": "心动",
+    "level_5": "牵绊",
+    "affectionUp": "好感度 +{n}",
+    "levelUp": "关系升级！",
+    "zoneLocked": "好感度不足，暂未解锁",
+    "touchCooldown": "请稍后再试……",
+    "coinsEarned": "获得 {n} 好感币",
+    "shopTitle": "💝 好感商店",
+    "shopTabEnergy": "体力",
+    "shopTabGift": "礼物",
+    "shopTabBuff": "道具",
+    "shopBuy": "购买",
+    "shopLocked": "锁定",
+    "shopDailyLeft": "今日剩余: {n}次",
+    "shopNeedLevel": "需要好感Lv.{n}",
+    "shopPurchased": "购买成功！",
+    "shopNotEnoughCoins": "好感币不足",
+    "shopDailyLimitReached": "今日已达购买上限",
+    "shopCoinBalance": "💰 {n} 好感币",
+    "giftSend": "赠送",
+    "giftSent": "向{name}赠送了{gift}！好感度+{n}",
+    "touchDailyMax": "今日触碰次数已用完",
+    "detailTitle": "{name}的好感",
+    "touchBtn": "👋 互动",
+    "shopBtn": "💝 商店",
+    "giftBtn": "🎁 赠礼"
+  },
   "game_complete": {
     "emoji": "👑",
     "title": "恭喜通关！",

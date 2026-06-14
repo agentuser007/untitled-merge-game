@@ -1,6 +1,7 @@
 [
     {
         "id": 0,
+        "characterId": "morven",
         "bossName": "林墨白",
         "bossTitle": "高冷校草",
         "bossAvatar": "assets/avatar/morven_no_bg.png",
@@ -75,6 +76,7 @@
     },
     {
         "id": 1,
+        "characterId": "leo",
         "bossName": "陆之昂",
         "bossTitle": "热血体育老师",
         "bossAvatar": "assets/avatar/leo_no_bg.png",
@@ -155,6 +157,7 @@
     },
     {
         "id": 2,
+        "characterId": "daniel",
         "bossName": "Daniel",
         "bossTitle": "浪漫外教",
         "bossAvatar": "assets/avatar/daniel_no_bg.png",
@@ -239,6 +242,7 @@
     },
     {
         "id": 3,
+        "characterId": "vincent",
         "bossName": "司徒渊",
         "bossTitle": "魅力校长",
         "bossAvatar": "assets/avatar/vincent_no_bg.png",

@@ -7,7 +7,14 @@ import { ref, computed } from 'vue';
 import { globalBus } from '../core/EventBus';
 import { BossLogic, LevelData, OrderData } from '../logic/BossLogic';
 import { useConfigStore } from './configStore';
+import type { BossSerializeData } from '../types/serialize';
 import { useLoopStore } from './loopStore';
+import type { LogicEvent } from '../logic/BoardLogic';
+import type { GameEvents, LoopConfig } from '../types/game';
+
+function emitEvents(events: LogicEvent[]): void {
+    globalBus.emitLogicEvents(events);
+}
 
 export const useBossStore = defineStore('boss', () => {
     // --- State ---
@@ -30,35 +37,7 @@ export const useBossStore = defineStore('boss', () => {
     currentOrderIdx.value = logic.currentOrderIdx;
     fsmState.value = logic.fsm.getState();
 
-    // --- Subscribe to logic events ---
-    // HMR LIMITATION: globalBus.on() listeners registered here will stack on HMR updates.
-    // EventBus.on() returns the handler ref (not an unsubscribe fn), so per-listener HMR cleanup
-    // would require storing each handler ref and calling globalBus.off() with it on dispose.
-    // For now, this is a known dev-only issue — full page reload clears it.
-    globalBus.on('boss:levelLoaded', (data) => {
-        if (data) {
-            currentLevelIdx.value = data.levelIdx;
-            bossName.value = data.bossName;
-            bossAvatar.value = data.bossAvatar;
-            currentHp.value = data.currentHp;
-            totalHp.value = data.totalHp;
-        }
-    });
-
-    globalBus.on('boss:hpChanged', (data) => {
-        if (data) {
-            currentHp.value = data.currentHp;
-            totalHp.value = data.totalHp;
-        }
-    });
-
-    globalBus.on('boss:orderLoaded', (data) => {
-        if (data) {
-            currentOrderIdx.value = data.orderIdx;
-            orders.value = [data.order];
-        }
-    });
-
+    // --- Subscribe to FSM state changes ---
     globalBus.on('bossfsm:stateChanged', (data) => {
         if (data) {
             fsmState.value = data.to;
@@ -75,12 +54,34 @@ export const useBossStore = defineStore('boss', () => {
     // --- Actions ---
     function loadLevel(levelIdx: number) {
         const configStore = useConfigStore();
-        const level = logic.loadLevel(levelIdx, configStore.levels as unknown as LevelData[]);
+        const loopStore = useLoopStore();
+        const { level, events } = logic.loadLevel(levelIdx, configStore.levels as unknown as LevelData[], configStore.bossProgression);
         if (level) {
             currentLevelIdx.value = logic.currentLevelIdx;
             currentHp.value = logic.currentHp;
             totalHp.value = logic.totalHp;
+            bossName.value = level.bossName;
+            bossAvatar.value = level.bossAvatar;
+
+            // Extract order from the orderLoaded event payload
+            const orderEvent = events.find(e => e.type === 'boss:orderLoaded');
+            if (orderEvent && orderEvent.payload) {
+                const p = orderEvent.payload as GameEvents['boss:orderLoaded'];
+                const order = p.order;
+                if (loopStore.hasRule('timedOrdersUp')) {
+                    if (!order.isTimed) {
+                        order.isTimed = true;
+                        order.timeLimit = 30;
+                    }
+                    order.timeLimit = Math.floor((order.timeLimit || 30) * 0.7);
+                    logic.timerRemaining = order.timeLimit;
+                }
+                orders.value = [order];
+                currentOrderIdx.value = logic.currentOrderIdx;
+            }
         }
+
+        emitEvents(events);
         return level;
     }
 
@@ -90,6 +91,7 @@ export const useBossStore = defineStore('boss', () => {
         currentHp.value = logic.currentHp;
         totalHp.value = logic.totalHp;
         currentOrderIdx.value = logic.currentOrderIdx;
+        emitEvents(result.events);
 
         if (!result.isDefeated) {
             loadOrder(logic.currentOrderIdx);
@@ -107,10 +109,11 @@ export const useBossStore = defineStore('boss', () => {
         const result = logic.applyDamage(damage);
         currentHp.value = logic.currentHp;
         totalHp.value = logic.totalHp;
+        emitEvents(result.events);
         return result;
     }
 
-    function setLoopConfig(config: any) {
+    function setLoopConfig(config: LoopConfig) {
         logic.setLoopConfig(config);
     }
 
@@ -119,7 +122,7 @@ export const useBossStore = defineStore('boss', () => {
         const loopStore = useLoopStore();
         const level = logic.getCurrentLevel(configStore.levels as unknown as LevelData[]);
         if (level && level.orders && orderIdx < level.orders.length) {
-            const order = logic.loadOrder(orderIdx, configStore.levels as unknown as LevelData[], configStore.items as any);
+            const { order, events } = logic.loadOrder(orderIdx, configStore.levels as unknown as LevelData[], configStore.bossProgression, configStore.items);
             if (order && loopStore.hasRule('timedOrdersUp')) {
                 if (!order.isTimed) {
                     order.isTimed = true;
@@ -132,13 +135,13 @@ export const useBossStore = defineStore('boss', () => {
                 orders.value = [order];
                 currentOrderIdx.value = logic.currentOrderIdx;
             }
+            emitEvents(events);
             return order;
         }
         return null;
     }
 
     function reset(): void {
-        // Reset all boss state for a new run (matches Game.resetRunState)
         logic.currentLevelIdx = -1;
         logic.currentOrderIdx = 0;
         logic.currentHp = 0;
@@ -170,21 +173,22 @@ export const useBossStore = defineStore('boss', () => {
         };
     }
 
-    function deserialize(data: any) {
+    function deserialize(data: unknown) {
         if (!data) return;
+        const d = data as BossSerializeData;
+        logic.currentLevelIdx = d.levelIdx ?? 0;
+        logic.currentOrderIdx = d.orderIdx ?? 0;
+        logic.currentHp = d.hp ?? 0;
+        logic.totalHp = d.totalHp ?? 0;
+        logic.timerRemaining = d.timerRemaining ?? 0;
         
-        logic.currentLevelIdx = data.levelIdx ?? 0;
-        logic.currentOrderIdx = data.orderIdx ?? 0;
-        logic.currentHp = data.hp ?? 0;
-        logic.totalHp = data.totalHp ?? 0;
-        logic.timerRemaining = data.timerRemaining ?? 0;
+        if (d.bossName) bossName.value = d.bossName;
+        if (d.bossAvatar) bossAvatar.value = d.bossAvatar;
         
-        if (data.bossName) bossName.value = data.bossName;
-        if (data.bossAvatar) bossAvatar.value = data.bossAvatar;
-        
-        // Restore FSM state
-        if (data.state) {
-            logic.fsm.reset(data.state === 'SUBMITTING' ? 'BATTLE' : data.state);
+        if (d.state) {
+            const validStates = ['IDLE', 'BATTLE', 'SUBMITTING', 'DEFEATED', 'COMPLETE'];
+            const targetState = d.state === 'SUBMITTING' ? 'BATTLE' : d.state;
+            logic.fsm.reset(validStates.includes(targetState) ? targetState : 'IDLE');
         }
         
         currentLevelIdx.value = logic.currentLevelIdx;
@@ -192,6 +196,10 @@ export const useBossStore = defineStore('boss', () => {
         currentHp.value = logic.currentHp;
         totalHp.value = logic.totalHp;
         fsmState.value = logic.fsm.getState();
+
+        if (logic.currentLevelIdx >= 0) {
+            loadOrder(logic.currentOrderIdx);
+        }
     }
 
     return {
