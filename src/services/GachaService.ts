@@ -1,7 +1,7 @@
 import { GachaLogic, type GachaItem, type GachaConfig, type GachaRandomDeps } from '../logic/GachaLogic';
 import { ItemEffectLogic } from '../logic/ItemEffectLogic';
 import { ItemEffectService, type InstantEffectDeps } from './ItemEffectService';
-import { emptyResult, mergeResolveResult, type ResolveResult } from './ServiceResultTypes';
+import { mergeResolveResult, type ResolveResult } from './ServiceResultTypes';
 import type { InventoryItemMeta } from '../types/game';
 
 export interface GachaServiceDeps {

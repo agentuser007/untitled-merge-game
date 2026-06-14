@@ -6,9 +6,9 @@
 // Delegates pure calculations to ItemEffectLogic.
 // ============================================================
 
-import { ItemEffectLogic, type FragmentDeps, type EnergyItemDeps, type DoubleGenDeps, type LuckyCoinDeps, type ResolveItemIdDeps } from '../logic/ItemEffectLogic';
+import { ItemEffectLogic } from '../logic/ItemEffectLogic';
 import type { ChainId, GachaPoolItemValue } from '../types/game';
-import { emptyResult, mergeResolveResult, type ResolveResult } from './ServiceResultTypes';
+import { emptyResult, type ResolveResult } from './ServiceResultTypes';
 
 // ---- Deps interfaces ----
 

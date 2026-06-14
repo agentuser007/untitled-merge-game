@@ -5,7 +5,7 @@
 // All functions are pure — deps injected as plain objects.
 // Store calls these and applies mutations + emits events.
 import type { ItemData as BoardItemData } from '../logic/BoardLogic';
-import type { DailyOrder, GameItem, BoardSnapshot, OrderRequirement, GeneratorConfig, LoopStatus, DailyOrderState } from '../types/game';
+import type { DailyOrder, GameItem, BoardSnapshot, GeneratorConfig, LoopStatus, DailyOrderState } from '../types/game';
 import type { ResolveResult } from './ServiceResultTypes';
 import type { OrderData } from '../logic/BossLogic';
 import type { MergeResult } from '../logic/BoardLogic';

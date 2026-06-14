@@ -9,7 +9,7 @@
 // ============================================================
 
 import type { ResolveResult } from './ServiceResultTypes';
-import { emptyResult, mergeResolveResult } from './ServiceResultTypes';
+import { emptyResult } from './ServiceResultTypes';
 import { ItemEffectService, type ConsumableEffectDeps } from './ItemEffectService';
 import type { GachaPoolItemValue } from '../types/game';
 
@@ -106,7 +106,7 @@ export function resolveConsumableUse(
 
 // --- resolveLegacyPotionUse ---
 
-export function resolveLegacyPotionUse(itemId: string, configItem: InventoryItemConfig, deps: InventoryDeps): ResolveResult {
+export function resolveLegacyPotionUse(_itemId: string, configItem: InventoryItemConfig, deps: InventoryDeps): ResolveResult {
     const energyRecover = configItem.energyRecover || deps.energyItem.defaultRecover;
     return {
         applyTo: {
