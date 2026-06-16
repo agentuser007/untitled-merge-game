@@ -96,7 +96,8 @@ const openInventory = () => {
   display: flex;
   gap: 8px;
   align-items: flex-end;
-  padding: 4px 16px 10px 66px;
+  margin-top: -120px;
+  padding: 124px 16px 10px 66px;
   overflow-x: auto !important;
   overflow-y: hidden !important;
   max-height: none !important;
@@ -200,13 +201,17 @@ const openInventory = () => {
 @media (max-height: 760px) {
   #boss-header { height: 115px; }
   .quest-row { min-height: 115px; }
-  #quest-carousel { padding-bottom: 6px; }
+  #quest-carousel {
+    margin-top: -100px;
+    padding-top: 104px;
+    padding-bottom: 6px;
+    padding-left: 60px;
+  }
   .inventory-entry { top: 28px; width: 40px; height: 80px; }
   .inventory-label { width: 40px; height: 30px; font-size: 9px; }
   .inventory-btn { margin-top: 6px; width: 40px; height: 40px; border-radius: 8px; border-width: 3px; }
   .inventory-icon { font-size: 22px; }
   .inventory-badge { top: -5px; left: 22px; width: 20px; height: 14px; font-size: 8px; }
-  #quest-carousel { padding-left: 50px; }
 }
 </style>
 

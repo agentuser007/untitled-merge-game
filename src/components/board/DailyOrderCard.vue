@@ -23,6 +23,7 @@
     </div>
 
     <!-- NPC Avatar Silhouette -->
+    <div class="daily-npc-avatar-bg" />
     <div class="daily-npc-avatar daily-npc-silhouette" :style="avatarStyle" />
 
     <!-- Card Body -->
@@ -204,14 +205,14 @@ const onSlotClick = (itemId: string) => {
   box-shadow: 0 0 10px rgba(255, 101, 132, 0.4) !important;
 }
 
-.daily-npc-avatar {
+.daily-npc-avatar,
+.daily-npc-avatar-bg {
   position: absolute !important;
   left: 50% !important;
   bottom: 38px;
   transform: translateX(-50%) !important;
   width: 85px !important;
   height: 121px !important;
-  z-index: 60 !important;
   border: none !important;
   border-radius: 0 !important;
   background-color: transparent !important;
@@ -222,6 +223,15 @@ const onSlotClick = (itemId: string) => {
   overflow: visible !important;
   pointer-events: none !important;
   flex-shrink: 0;
+}
+
+.daily-npc-avatar {
+  z-index: 60 !important;
+}
+
+.daily-npc-avatar-bg {
+  z-index: 59 !important;
+  background-image: url('/assets/avatar/boss_bg.webp') !important;
 }
 
 .daily-npc-silhouette {
@@ -438,7 +448,8 @@ const onSlotClick = (itemId: string) => {
   .daily-order-card {
     margin-top: 28px !important;
   }
-  .daily-npc-avatar {
+  .daily-npc-avatar,
+  .daily-npc-avatar-bg {
     width: 56px !important;
     height: 80px !important;
     bottom: 30px;

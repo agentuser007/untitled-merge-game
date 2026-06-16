@@ -49,17 +49,9 @@
             </template>
           </div>
           <div v-else class="info-empty-state">
-            <div class="info-detail-row">
-              <div class="info-item-group">
-                <span class="info-item-name">眉笔</span>
-                <span class="info-item-level">lv.2</span>
-              </div>
-              <span class="info-sell-label">{{ sellLabel }}</span>
-            </div>
-            <div class="info-divider" />
             <div class="info-hint-row">
               <span class="info-icon">ⓘ</span>
-              <span class="info-hint-text">{{ hint }}</span>
+              <span class="info-hint-text">点击棋盘道具查看信息</span>
             </div>
           </div>
         </div>

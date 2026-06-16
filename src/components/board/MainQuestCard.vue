@@ -210,8 +210,8 @@ const onSubmit = () => {
   left: calc(50% + 10px) !important;
   bottom: 48px;
   transform: translateX(-50%) !important;
-  width: 112px !important;
-  height: 160px !important;
+  width: 168px !important;
+  height: 240px !important;
   z-index: 60 !important;
   border: none !important;
   border-radius: 0 !important;
@@ -456,8 +456,8 @@ const onSubmit = () => {
     margin-top: 28px !important;
   }
   #boss-portrait {
-    width: 80px !important;
-    height: 110px !important;
+    width: 120px !important;
+    height: 165px !important;
     bottom: 38px;
   }
   .quest-card-body {

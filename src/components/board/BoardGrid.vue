@@ -287,7 +287,7 @@ const { isDragging: _isDragging, dragSourceIndex: _dragSourceIndex, onPointerDow
   flex-direction: column;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
   box-sizing: border-box;
   background: transparent !important;
   box-shadow: none !important;
@@ -339,7 +339,6 @@ const { isDragging: _isDragging, dragSourceIndex: _dragSourceIndex, onPointerDow
 .board-frame-inner {
   position: relative;
   width: calc(7 * var(--cell-size) + 1.5cqw + 7.4cqw + 8px);
-  margin: 2cqw auto;
   border-radius: 12px;
   background: var(--board-frame-bg);
   border: 2px solid var(--board-frame-border);
@@ -395,7 +394,7 @@ const { isDragging: _isDragging, dragSourceIndex: _dragSourceIndex, onPointerDow
 
 @media (max-height: 760px) {
   .grid-container {
-    padding: 0 2px;
+    padding: 0 0px;
     --avail-height: calc(100cqh - 85px - 115px - 74px - 8cqw);
   }
 }
